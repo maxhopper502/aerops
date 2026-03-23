@@ -62,8 +62,8 @@ let pinName='';
 /* ── Utils ───────────────────────────────── */
 const $=id=>document.getElementById(id);
 function toast(m,d=2200){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',d);}
-function today(){return new Date().toISOString().slice(0,10);}
-function nowT(){return new Date().toTimeString().slice(0,5);}
+function today(){return new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});}
+function nowT(){return new Date().toLocaleTimeString('en-AU',{timeZone:'Australia/Adelaide',hour:'2-digit',minute:'2-digit',hour12:false});}
 function fmtD(d){if(!d)return'—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});}
 function dT(t,r){return Math.round(((100-r)/5)*10)/10;}
 function d2c(d){return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16];}
