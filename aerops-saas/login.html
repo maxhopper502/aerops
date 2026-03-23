@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AeroOps — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#0f1f3d;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.card{background:white;border-radius:20px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,0.4);}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:36px;}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#1a6fdb,#38bdf8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo-text{font-size:1.4rem;font-weight:800;color:#0f1f3d;letter-spacing:-.5px;}
+.logo-text span{color:#1a6fdb;}
+h1{font-size:1.6rem;font-weight:800;color:#0f1f3d;margin-bottom:6px;letter-spacing:-.5px;}
+.subtitle{font-size:.875rem;color:#64748b;margin-bottom:32px;}
+.form-group{margin-bottom:18px;}
+label{display:block;font-size:.78rem;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+input{width:100%;padding:13px 16px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.95rem;font-family:inherit;outline:none;color:#1e293b;transition:border-color .2s;}
+input:focus{border-color:#1a6fdb;}
+.btn{width:100%;padding:14px;background:#1a6fdb;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px;transition:all .2s;}
+.btn:hover{background:#1558b0;}
+.btn:disabled{background:#94a3b8;cursor:not-allowed;}
+.divider{text-align:center;margin:24px 0;color:#94a3b8;font-size:.8rem;position:relative;}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#e2e8f0;}
+.divider::before{left:0;}.divider::after{right:0;}
+.link-btn{width:100%;padding:13px;background:white;color:#1a6fdb;border:1.5px solid #1a6fdb;border-radius:10px;font-size:.95rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;text-align:center;display:block;text-decoration:none;}
+.link-btn:hover{background:#f0f6ff;}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:8px;padding:12px 14px;font-size:.85rem;margin-bottom:16px;display:none;}
+.back-link{color:#64748b;font-size:.85rem;cursor:pointer;margin-top:20px;text-align:center;display:block;}
+.back-link:hover{color:#1a6fdb;}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;}
+.plan-opt{border:2px solid #e2e8f0;border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;}
+.plan-opt:hover,.plan-opt.selected{border-color:#1a6fdb;background:#f0f6ff;}
+.plan-opt-name{font-size:.78rem;font-weight:700;color:#0f1f3d;}
+.plan-opt-price{font-size:1rem;font-weight:800;color:#1a6fdb;}
+.plan-opt-desc{font-size:.68rem;color:#64748b;margin-top:2px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+footer{text-align:center;color:rgba(255,255,255,.4);font-size:.75rem;margin-top:24px;}
+</style>
+</head>
+<body>
+
+<div id="panel-login" class="card">
+  <div class="logo"><div class="logo-icon">✈</div><div class="logo-text">Aero<span>Ops</span></div></div>
+  <h1>Sign in</h1>
+  <p class="subtitle">Welcome back. Enter your details to continue.</p>
+  <div class="error-box" id="login-err"></div>
+  <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com"/></div>
+  <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+  <button class="btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+  <div class="divider">or</div>
+  <a class="link-btn" href="#" onclick="show('panel-register')">Create a new account</a>
+  <span class="back-link" onclick="show('panel-forgot')">Forgot password?</span>
+</div>
+
+<div id="panel-register" class="card" style="display:none;max-width:460px;">
+  <div class="logo"><div class="logo-icon">✈</div><div class="logo-text">Aero<span>Ops</span></div></div>
+  <h1>Get started</h1>
+  <p class="subtitle">Set up your AeroOps account. 30-day free trial, no card required.</p>
+  <div class="error-box" id="reg-err"></div>
+  <div class="form-group"><label>Company / Operation Name</label><input type="text" id="reg-company" placeholder="e.g. Smith Aerial Services"/></div>
+  <div class="form-group two-col">
+    <div><label>Your Name</label><input type="text" id="reg-name" placeholder="First Last"/></div>
+    <div><label>Phone</label><input type="tel" id="reg-phone" placeholder="04xx xxx xxx"/></div>
+  </div>
+  <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
+  <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min 8 characters"/></div>
+  <div class="form-group">
+    <label>Plan</label>
+    <div class="plan-grid">
+      <div class="plan-opt selected" onclick="selectPlan(this,'solo')"><div class="plan-opt-name">Solo</div><div class="plan-opt-price">$149</div><div class="plan-opt-desc">/mo</div></div>
+      <div class="plan-opt" onclick="selectPlan(this,'fleet')"><div class="plan-opt-name">Fleet</div><div class="plan-opt-price">$349</div><div class="plan-opt-desc">/mo</div></div>
+      <div class="plan-opt" onclick="selectPlan(this,'enterprise')"><div class="plan-opt-name">Enterprise</div><div class="plan-opt-price">$599</div><div class="plan-opt-desc">/mo</div></div>
+    </div>
+    <input type="hidden" id="reg-plan" value="solo"/>
+  </div>
+  <button class="btn" id="reg-btn" onclick="doRegister()">Create Account &amp; Start Trial →</button>
+  <span class="back-link" onclick="show('panel-login')">← Back to sign in</span>
+</div>
+
+<div id="panel-forgot" class="card" style="display:none;">
+  <div class="logo"><div class="logo-icon">✈</div><div class="logo-text">Aero<span>Ops</span></div></div>
+  <h1>Reset password</h1>
+  <p class="subtitle">Enter your email and we'll send a reset link.</p>
+  <div class="error-box" id="forgot-err"></div>
+  <div class="form-group"><label>Email</label><input type="email" id="forgot-email" placeholder="you@company.com"/></div>
+  <button class="btn" onclick="doForgot()">Send Reset Link</button>
+  <div id="forgot-ok" style="display:none;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;padding:12px 14px;font-size:.85rem;color:#065f46;margin-top:12px;">✅ Check your email for a password reset link.</div>
+  <span class="back-link" onclick="show('panel-login')">← Back to sign in</span>
+</div>
+
+<footer>AeroOps · Built for aerial ag operators · Australia</footer>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,doc,setDoc,getDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const FB={apiKey:"AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI",authDomain:"aerotech-ops.firebaseapp.com",projectId:"aerotech-ops",storageBucket:"aerotech-ops.firebasestorage.app",messagingSenderId:"645848371961",appId:"1:645848371961:web:4415c4d7623219fd31c828"};
+const auth=getAuth(initializeApp(FB));
+const db=getFirestore();
+
+onAuthStateChanged(auth,async u=>{
+  if(u){const s=await getDoc(doc(db,'companies',u.uid));if(s.exists())window.location.href='dashboard/';}
+});
+
+window.show=id=>{document.querySelectorAll('.card').forEach(c=>c.style.display='none');document.getElementById(id).style.display='block';};
+window.selectPlan=(el,plan)=>{document.querySelectorAll('.plan-opt').forEach(p=>p.classList.remove('selected'));el.classList.add('selected');document.getElementById('reg-plan').value=plan;};
+
+function err(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';}
+function noErr(id){document.getElementById(id).style.display='none';}
+
+window.doLogin=async()=>{
+  noErr('login-err');
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){err('login-err','Please enter your email and password.');return;}
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in...';
+  try{
+    const c=await signInWithEmailAndPassword(auth,email,pass);
+    const s=await getDoc(doc(db,'companies',c.user.uid));
+    if(s.exists()){window.location.href='dashboard/';}
+    else{err('login-err','Company account not found. Please register.');btn.disabled=false;btn.textContent='Sign In →';}
+  }catch(e){
+    const msgs={'auth/user-not-found':'No account with this email.','auth/wrong-password':'Incorrect password.','auth/too-many-requests':'Too many attempts. Try again later.'};
+    err('login-err',msgs[e.code]||'Sign in failed. Check your email and password.');
+    btn.disabled=false;btn.textContent='Sign In →';
+  }
+};
+
+window.doRegister=async()=>{
+  noErr('reg-err');
+  const company=document.getElementById('reg-company').value.trim();
+  const name=document.getElementById('reg-name').value.trim();
+  const phone=document.getElementById('reg-phone').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const plan=document.getElementById('reg-plan').value;
+  if(!company||!name||!email||!pass){err('reg-err','Please fill in all required fields.');return;}
+  if(pass.length<8){err('reg-err','Password must be at least 8 characters.');return;}
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='Creating account...';
+  try{
+    const c=await createUserWithEmailAndPassword(auth,email,pass);
+    await setDoc(doc(db,'companies',c.user.uid),{
+      companyName:company,adminName:name,adminEmail:email,adminPhone:phone,
+      plan,status:'trial',
+      trialEnds:new Date(Date.now()+30*24*60*60*1000).toISOString(),
+      createdAt:serverTimestamp(),
+      settings:{aircraft:[],pilots:[],mixers:[],airstrips:[],
+        hopperCaps802:{Spray:3020,Urea:2000,Fertiliser:2400,'Snail Bait':2000,'Mouse Bait':1200,Seed:2000},
+        hopperCaps502:{Spray:1500,Urea:1200,Fertiliser:1400,'Snail Bait':1200,'Mouse Bait':800,Seed:1200},
+        herbLoading:10}
+    });
+    window.location.href='dashboard/?onboarding=1';
+  }catch(e){
+    const msgs={'auth/email-already-in-use':'An account with this email already exists.','auth/invalid-email':'Please enter a valid email address.','auth/weak-password':'Password is too weak.'};
+    err('reg-err',msgs[e.code]||'Registration failed. Please try again.');
+    btn.disabled=false;btn.textContent='Create Account & Start Trial →';
+  }
+};
+
+window.doForgot=async()=>{
+  noErr('forgot-err');
+  const email=document.getElementById('forgot-email').value.trim();
+  if(!email){err('forgot-err','Please enter your email address.');return;}
+  try{await sendPasswordResetEmail(auth,email);document.getElementById('forgot-ok').style.display='block';}
+  catch(e){err('forgot-err','Could not send reset email. Check the address and try again.');}
+};
+</script>
+</body>
+</html>

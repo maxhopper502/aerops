@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AeroOps — Operations Software for Aerial Ag</title>
+<meta name="description" content="AeroOps is the complete operations platform built exclusively for aerial agricultural operators. Job scheduling, pilot apps, mixer sheets, invoicing and more."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --navy:#0f1f3d;--blue:#1a6fdb;--sky:#38bdf8;--gold:#f59e0b;
+  --light:#f0f6ff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--white:#fff;
+}
+body{font-family:'Inter',sans-serif;color:var(--text);background:var(--white);overflow-x:hidden;}
+html{scroll-behavior:smooth;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(15,31,61,0.97);backdrop-filter:blur(10px);padding:0 24px;}
+.nav-inner{max-width:1200px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--sky));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.nav-logo-text{font-size:1.25rem;font-weight:800;color:white;letter-spacing:-.5px;}
+.nav-logo-text span{color:var(--sky);}
+.nav-links{display:flex;align-items:center;gap:28px;}
+.nav-links a{color:rgba(255,255,255,.75);text-decoration:none;font-size:.875rem;font-weight:500;transition:color .2s;}
+.nav-links a:hover{color:white;}
+.nav-cta{background:var(--blue);color:white!important;padding:8px 20px;border-radius:8px;font-weight:600!important;}
+.nav-cta:hover{background:#1558b0!important;}
+@media(max-width:640px){.nav-links{gap:14px;}.nav-links a:not(.nav-cta){display:none;}}
+
+/* HERO */
+.hero{min-height:100vh;background:var(--navy);position:relative;display:flex;align-items:center;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background-image:url('assets/hero-plane.png');background-size:cover;background-position:center 30%;opacity:.22;}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(15,31,61,.95) 0%,rgba(15,31,61,.7) 60%,rgba(15,31,61,.4) 100%);}
+.hero-content{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:120px 24px 80px;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);color:var(--sky);padding:6px 14px;border-radius:100px;font-size:.8rem;font-weight:600;margin-bottom:24px;}
+.hero h1{font-size:clamp(2.4rem,6vw,4.5rem);font-weight:900;color:white;line-height:1.05;letter-spacing:-2px;max-width:800px;margin-bottom:24px;}
+.hero h1 span{color:var(--sky);}
+.hero p{font-size:clamp(1rem,2vw,1.2rem);color:rgba(255,255,255,.72);max-width:560px;line-height:1.65;margin-bottom:40px;}
+.hero-btns{display:flex;flex-wrap:wrap;gap:14px;}
+.btn-primary{background:var(--blue);color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;border:none;cursor:pointer;transition:all .2s;display:inline-block;}
+.btn-primary:hover{background:#1558b0;transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,.1);color:white;padding:14px 32px;border-radius:10px;font-weight:600;font-size:1rem;text-decoration:none;border:1px solid rgba(255,255,255,.25);cursor:pointer;transition:all .2s;display:inline-block;}
+.btn-secondary:hover{background:rgba(255,255,255,.18);}
+.hero-stats{display:flex;flex-wrap:wrap;gap:40px;margin-top:60px;padding-top:48px;border-top:1px solid rgba(255,255,255,.12);}
+.hero-stat-num{font-size:2rem;font-weight:900;color:white;}
+.hero-stat-num span{color:var(--sky);}
+.hero-stat-label{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:500;margin-top:2px;}
+
+/* SECTION COMMON */
+section{padding:96px 24px;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.section-tag{font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;}
+.section-title{font-size:clamp(1.75rem,4vw,2.75rem);font-weight:800;color:var(--navy);letter-spacing:-1px;line-height:1.15;margin-bottom:16px;}
+.section-sub{font-size:1rem;color:var(--muted);line-height:1.65;max-width:600px;}
+
+/* PROBLEM */
+.problem{background:var(--light);}
+.problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:48px;}
+.problem-card{background:white;border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;gap:16px;}
+.problem-icon{font-size:2rem;flex-shrink:0;}
+.problem-card h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.problem-card p{font-size:.85rem;color:var(--muted);line-height:1.55;}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:56px;}
+.feature-card{border-radius:20px;overflow:hidden;border:1px solid var(--border);transition:transform .2s,box-shadow .2s;}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(26,111,219,.12);}
+.feature-card-top{padding:32px;background:linear-gradient(135deg,var(--navy),#1a3566);}
+.feature-app-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(56,189,248,.2);border:1px solid rgba(56,189,248,.3);color:var(--sky);padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:700;margin-bottom:16px;}
+.feature-card-top h3{font-size:1.35rem;font-weight:800;color:white;margin-bottom:8px;}
+.feature-card-top p{font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.55;}
+.feature-card-body{padding:28px;background:var(--light);}
+.feature-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.feature-list li{display:flex;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--text);line-height:1.45;}
+.feature-list li::before{content:'✓';color:var(--blue);font-weight:700;flex-shrink:0;margin-top:1px;}
+
+/* HOW IT WORKS */
+.steps{background:var(--navy);}
+.steps .section-title{color:white;}
+.steps .section-tag{color:var(--sky);}
+.steps .section-sub{color:rgba(255,255,255,.6);}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px;margin-top:56px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
+.step{background:rgba(255,255,255,.04);padding:32px 24px;border-right:1px solid rgba(255,255,255,.08);}
+.step:last-child{border-right:none;}
+.step-num{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:white;margin-bottom:20px;}
+.step h3{font-size:.95rem;font-weight:700;color:white;margin-bottom:8px;}
+.step p{font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;}
+
+/* PRICING */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-top:56px;align-items:start;}
+.price-card{border:2px solid var(--border);border-radius:20px;padding:36px 28px;position:relative;}
+.price-card.featured{border-color:var(--blue);background:linear-gradient(135deg,#f0f6ff,white);}
+.price-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:.72rem;font-weight:700;padding:5px 16px;border-radius:100px;white-space:nowrap;}
+.price-name{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.price-amount{font-size:2.75rem;font-weight:900;color:var(--navy);letter-spacing:-1.5px;}
+.price-amount span{font-size:1rem;font-weight:500;color:var(--muted);}
+.price-desc{font-size:.82rem;color:var(--muted);margin:8px 0 24px;line-height:1.5;}
+.price-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:32px;}
+.price-list li{display:flex;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--text);}
+.price-list li::before{content:'✓';color:var(--blue);font-weight:700;flex-shrink:0;}
+.price-btn{display:block;text-align:center;padding:14px;border-radius:10px;font-weight:700;font-size:.95rem;text-decoration:none;cursor:pointer;border:none;width:100%;transition:all .2s;}
+.price-btn-outline{background:transparent;color:var(--blue);border:2px solid var(--blue);}
+.price-btn-outline:hover{background:var(--blue);color:white;}
+.price-btn-filled{background:var(--blue);color:white;}
+.price-btn-filled:hover{background:#1558b0;}
+.price-note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:20px;line-height:1.5;}
+
+/* WAITLIST */
+.waitlist{background:var(--light);}
+.waitlist-inner{max-width:580px;margin:0 auto;text-align:center;}
+.waitlist h2{font-size:clamp(1.75rem,4vw,2.25rem);font-weight:800;color:var(--navy);letter-spacing:-1px;margin-bottom:12px;}
+.waitlist p{color:var(--muted);margin-bottom:32px;font-size:.95rem;line-height:1.6;}
+.waitlist-form{display:flex;flex-direction:column;gap:12px;text-align:left;}
+.waitlist-form input,.waitlist-form select{padding:14px 18px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;font-family:inherit;outline:none;transition:border-color .2s;width:100%;background:white;color:var(--text);}
+.waitlist-form input:focus,.waitlist-form select:focus{border-color:var(--blue);}
+.waitlist-form .row{display:flex;gap:10px;}
+.waitlist-form .row input{flex:1;}
+#waitlist-success{display:none;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:12px;padding:20px;color:#065f46;font-weight:600;text-align:center;margin-top:8px;}
+
+/* FOOTER */
+footer{background:var(--navy);padding:56px 24px 32px;}
+.footer-inner{max-width:1200px;margin:0 auto;}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px;margin-bottom:40px;}
+.footer-brand-name{font-size:1.1rem;font-weight:800;color:white;}
+.footer-brand-name span{color:var(--sky);}
+.footer-tagline{font-size:.78rem;color:rgba(255,255,255,.4);margin-top:6px;max-width:220px;line-height:1.5;}
+.footer-links h4{font-size:.72rem;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.footer-links{display:flex;flex-direction:column;gap:8px;}
+.footer-links a{font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;}
+.footer-links a:hover{color:white;}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:24px;font-size:.75rem;color:rgba(255,255,255,.35);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+/* FADE IN */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">
+      <div class="nav-logo-icon">✈</div>
+      <span class="nav-logo-text">Aero<span>Ops</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#waitlist" class="nav-cta">Get Early Access</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">✈&nbsp; Built exclusively for aerial ag operators</div>
+    <h1>Run your whole<br/><span>operation</span><br/>from the flight line.</h1>
+    <p>AeroOps is the complete platform for aerial agricultural operators — job intake, scheduling, pilot apps, mixer sheets, invoicing and records. Everything your team needs, built for the paddock.</p>
+    <div class="hero-btns">
+      <a href="#waitlist" class="btn-primary">Request Early Access →</a>
+      <a href="#features" class="btn-secondary">See the Platform</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num"><span>4</span> Apps</div>
+        <div class="hero-stat-label">Office · Pilot · Mixer · Client</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">100<span>%</span></div>
+        <div class="hero-stat-label">Mobile-first, iPad-ready</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">Real<span>-</span>time</div>
+        <div class="hero-stat-label">Live sync across all devices</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">🇦🇺</div>
+        <div class="hero-stat-label">Built for Australian operators</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem fade-in">
+  <div class="section-inner">
+    <div class="section-tag">The Problem</div>
+    <h2 class="section-title">Aerial ag offices run on<br/>WhatsApp and spreadsheets.</h2>
+    <p class="section-sub">Most operators stitch together group chats, paper load sheets and Excel invoices to manage complex multi-aircraft operations. There's a better way.</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📱</div>
+        <div>
+          <h3>Job briefs via WhatsApp</h3>
+          <p>Critical spray details lost in chat threads. Pilots guessing at product rates, swath widths and hazard notes at the airstrip.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📋</div>
+        <div>
+          <h3>Paper mixing sheets</h3>
+          <p>Handwritten load sheets, manual calculations, no record of what actually went out. Compliance gaps waiting to happen.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📊</div>
+        <div>
+          <h3>Invoicing from memory</h3>
+          <p>Reconciling tacho times and hectares days after the job. Revenue leaking through forgotten charges and billing delays.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🗂️</div>
+        <div>
+          <h3>No visibility across jobs</h3>
+          <p>Who's flying what, where, when? Multiple aircraft and locations with no single source of truth for the day's plan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="fade-in">
+  <div class="section-inner">
+    <div class="section-tag">The Platform</div>
+    <h2 class="section-title">Four apps. One operation.</h2>
+    <p class="section-sub">Every role gets their own tailored view — all syncing in real time through the cloud. No more phone calls to find out what's happening.</p>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-card-top">
+          <div class="feature-app-badge">🖥&nbsp; AeroOps Office</div>
+          <h3>The Operations Hub</h3>
+          <p>Full job management for dispatchers and managers — from new quote to final invoice.</p>
+        </div>
+        <div class="feature-card-body">
+          <ul class="feature-list">
+            <li>Drag-and-drop weekly scheduler across multiple aircraft</li>
+            <li>Day plan with cascading start times per pilot</li>
+            <li>Auto job cost estimation — $/ha or hourly billing</li>
+            <li>Live pilot updates as they happen in the field</li>
+            <li>Xero integration for one-click invoicing</li>
+            <li>Revenue records by pilot, aircraft and airstrip</li>
+            <li>Client request queue and review workflow</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-top">
+          <div class="feature-app-badge">✈&nbsp; AeroOps Pilot</div>
+          <h3>The Pilot's Field App</h3>
+          <p>Everything the pilot needs at the airstrip — no paperwork, no phone calls.</p>
+        </div>
+        <div class="feature-card-body">
+          <ul class="feature-list">
+            <li>Today's jobs pre-loaded with product, rate, swath and hazards</li>
+            <li>Hazard acknowledgement required before job start</li>
+            <li>Tacho session tracking — pause, resume, multi-job</li>
+            <li>Minimal manual entry — swath width is all the pilot enters</li>
+            <li>Completion record auto-syncs to office instantly</li>
+            <li>Installs as a home screen app on iPhone or iPad</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-top">
+          <div class="feature-app-badge">🧪&nbsp; AeroOps Mixer</div>
+          <h3>The Mixer's Load Sheet</h3>
+          <p>Load-by-load mixing sheets with calculated volumes — no mental arithmetic.</p>
+        </div>
+        <div class="feature-card-body">
+          <ul class="feature-list">
+            <li>Today's jobs auto-populated from the schedule</li>
+            <li>Per-load chemical volumes based on hopper size</li>
+            <li>Partial load support for first and last loads</li>
+            <li>Daily stock summary across all products</li>
+            <li>Supervisor "ALL" mode to see all mixers' sheets</li>
+            <li>Installs as a home screen app on any phone or tablet</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-top">
+          <div class="feature-app-badge">📝&nbsp; AeroOps Request</div>
+          <h3>Client Job Request Form</h3>
+          <p>A professional, mobile-friendly way for clients to submit spray and spread requests.</p>
+        </div>
+        <div class="feature-card-body">
+          <ul class="feature-list">
+            <li>5-step guided form — spray or spread, products, timing</li>
+            <li>Paddock hectares and location entry</li>
+            <li>Auto-generates a reference number for the client</li>
+            <li>Lands directly in Office job queue for review</li>
+            <li>No account or login needed for clients</li>
+            <li>Works on any device, any browser</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="steps fade-in">
+  <div class="section-inner">
+    <div class="section-tag">How It Works</div>
+    <h2 class="section-title">From request to invoice in one system.</h2>
+    <p class="section-sub">AeroOps connects every step of your operation — client, office, pilot and mixer all working from the same live data.</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Client submits request</h3>
+        <p>Client fills the AeroOps Request form on their phone. It arrives instantly in the Office queue with a reference number.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Office reviews &amp; quotes</h3>
+        <p>Dispatcher reviews the job, enters paddock details, auto-calculates an estimate and confirms with the client.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Schedule &amp; brief</h3>
+        <p>Drag the job onto the weekly planner. Pilot and mixer apps update instantly — no phone calls needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Pilot works the job</h3>
+        <p>Pilot taps Start on their app, tracks tacho sessions, completes the job. Record syncs to office automatically.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3>Invoice &amp; done</h3>
+        <p>Office reviews the completion record and pushes a Tax Invoice directly to Xero with one button.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="fade-in">
+  <div class="section-inner">
+    <div class="section-tag">Pricing</div>
+    <h2 class="section-title">Simple, honest pricing.</h2>
+    <p class="section-sub">Priced for Australian aerial ag operations — from sole operators to large multi-aircraft fleets. No lock-in contracts. Cancel any time.</p>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-name">Solo</div>
+        <div class="price-amount">$149<span>/mo</span></div>
+        <div class="price-desc">For sole operators or small one-aircraft businesses.</div>
+        <ul class="price-list">
+          <li>1 aircraft</li>
+          <li>Up to 4 pilots</li>
+          <li>Up to 2 mixers</li>
+          <li>All 4 apps included</li>
+          <li>Xero integration</li>
+          <li>Email support</li>
+        </ul>
+        <a href="#waitlist" class="price-btn price-btn-outline">Get Early Access</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-badge">Most Popular</div>
+        <div class="price-name">Fleet</div>
+        <div class="price-amount">$349<span>/mo</span></div>
+        <div class="price-desc">For established operators running multiple aircraft through the season.</div>
+        <ul class="price-list">
+          <li>Up to 4 aircraft</li>
+          <li>Unlimited pilots</li>
+          <li>Unlimited mixers</li>
+          <li>All 4 apps included</li>
+          <li>Xero integration</li>
+          <li>Priority support</li>
+          <li>Custom airstrip rates</li>
+        </ul>
+        <a href="#waitlist" class="price-btn price-btn-filled">Get Early Access</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">Enterprise</div>
+        <div class="price-amount">$599<span>/mo</span></div>
+        <div class="price-desc">Large operations with multiple bases, aircraft types and high job volume.</div>
+        <ul class="price-list">
+          <li>Unlimited aircraft</li>
+          <li>Unlimited pilots &amp; mixers</li>
+          <li>Multiple operating bases</li>
+          <li>All 4 apps included</li>
+          <li>Xero integration</li>
+          <li>Dedicated onboarding</li>
+          <li>Phone support</li>
+          <li>Feature requests prioritised</li>
+        </ul>
+        <a href="#waitlist" class="price-btn price-btn-outline">Get Early Access</a>
+      </div>
+    </div>
+    <p class="price-note" style="margin-top:28px;font-size:.82rem;color:var(--muted);text-align:center;">Seasonal plans available. All prices AUD + GST. Early access users lock in founding pricing permanently.</p>
+  </div>
+</section>
+
+<!-- WAITLIST -->
+<section id="waitlist" class="waitlist fade-in">
+  <div class="section-inner">
+    <div class="waitlist-inner">
+      <div class="section-tag" style="text-align:center">Early Access</div>
+      <h2>Be first to fly with AeroOps.</h2>
+      <p>We're onboarding a small group of Australian aerial ag operators for early access testing. Join the list and we'll be in touch to get you set up.</p>
+      <form class="waitlist-form" onsubmit="submitWaitlist(event)">
+        <div class="row">
+          <input type="text" id="wl-name" placeholder="Your name" required/>
+          <input type="text" id="wl-company" placeholder="Company name" required/>
+        </div>
+        <input type="email" id="wl-email" placeholder="Email address" required/>
+        <input type="tel" id="wl-phone" placeholder="Phone number (optional)"/>
+        <select id="wl-fleet">
+          <option value="">Fleet size...</option>
+          <option>1 aircraft (Solo)</option>
+          <option>2–3 aircraft</option>
+          <option>4+ aircraft</option>
+        </select>
+        <select id="wl-state">
+          <option value="">State / Territory...</option>
+          <option>SA</option><option>VIC</option><option>NSW</option>
+          <option>QLD</option><option>WA</option><option>NT</option><option>TAS</option>
+        </select>
+        <button type="submit" class="btn-primary" style="width:100%;padding:16px;font-size:1rem;">Request Early Access →</button>
+      </form>
+      <div id="waitlist-success">🎉 You're on the list! We'll be in touch soon to get you set up with early access.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">Aero<span>Ops</span></div>
+        <div class="footer-tagline">Operations software built exclusively for aerial agricultural operators.</div>
+      </div>
+      <div>
+        <div class="footer-links">
+          <h4>Product</h4>
+          <a href="#features">AeroOps Office</a>
+          <a href="#features">AeroOps Pilot</a>
+          <a href="#features">AeroOps Mixer</a>
+          <a href="#features">AeroOps Request</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-links">
+          <h4>Company</h4>
+          <a href="#pricing">Pricing</a>
+          <a href="#waitlist">Early Access</a>
+          <a href="mailto:hello@aerops.com.au">Contact Us</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-links">
+          <h4>Contact</h4>
+          <a href="mailto:hello@aerops.com.au">hello@aerops.com.au</a>
+          <a href="#">Australia</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 AeroOps. All rights reserved.</span>
+      <span>Built in Australia for aerial ag operators.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Scroll fade in
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});
+},{threshold:0.1});
+document.querySelectorAll('.fade-in').forEach(el=>observer.observe(el));
+
+// Waitlist form
+async function submitWaitlist(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Sending...';
+  const data={
+    name:document.getElementById('wl-name').value,
+    company:document.getElementById('wl-company').value,
+    email:document.getElementById('wl-email').value,
+    phone:document.getElementById('wl-phone').value,
+    fleet:document.getElementById('wl-fleet').value,
+    state:document.getElementById('wl-state').value,
+    submittedAt:new Date().toISOString(),
+    source:'aerops.com.au'
+  };
+  // Write to Firebase Firestore
+  const FIREBASE_URL='https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents/waitlist';
+  const sv=v=>({stringValue:v});
+  const body={fields:{
+    name:sv(data.name),company:sv(data.company),email:sv(data.email),
+    phone:sv(data.phone),fleet:sv(data.fleet),state:sv(data.state),
+    submittedAt:sv(data.submittedAt),source:sv(data.source)
+  }};
+  try{
+    await fetch(FIREBASE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  }catch(err){console.warn('Firestore write failed',err);}
+  e.target.style.display='none';
+  document.getElementById('waitlist-success').style.display='block';
+}
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+</body>
+</html>
