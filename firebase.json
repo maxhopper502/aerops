@@ -3,54 +3,120 @@
     {
       "target": "office",
       "public": "dashboard",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
       "headers": [
         {
           "source": "**",
           "headers": [
-            {"key": "Cache-Control", "value": "no-cache, no-store, must-revalidate"},
-            {"key": "X-Frame-Options", "value": "SAMEORIGIN"},
-            {"key": "X-Content-Type-Options", "value": "nosniff"}
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
           ]
         }
       ],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     },
     {
       "target": "pilot",
       "public": "pilot-pwa",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "PREDEPLOY.py", "pilot-app.js"],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "PREDEPLOY.py",
+        "pilot-app.js"
+      ],
       "headers": [
         {
           "source": "**",
-          "headers": [{"key": "Cache-Control", "value": "no-cache, no-store, must-revalidate"}]
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
         }
       ],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     },
     {
       "target": "mixer",
       "public": "mixer-clean",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
       "headers": [
         {
           "source": "**",
-          "headers": [{"key": "Cache-Control", "value": "no-cache, no-store, must-revalidate"}]
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
         }
       ],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     },
     {
       "target": "jobs",
       "public": "client-form",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     },
     {
       "target": "landing",
       "public": "aerops-landing",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ]
 }
