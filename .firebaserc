@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "aerotech-ops"
+  },
+  "targets": {
+    "aerotech-ops": {
+      "hosting": {
+        "office":  ["aerotech-ops"],
+        "pilot":   ["aerops-pilot"],
+        "mixer":   ["aerops-mixer"],
+        "jobs":    ["aerops-jobs"],
+        "landing": ["aerops-landing"]
+      }
+    }
+  }
+}
