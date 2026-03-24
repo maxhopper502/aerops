@@ -27,10 +27,13 @@ jobs:
       - name: Run Pilot PWA PREDEPLOY
         run: python3 pilot-pwa/PREDEPLOY.py
 
-      - name: Deploy to Firebase Hosting
+      - name: Install Functions dependencies
+        run: cd functions && npm install
+
+      - name: Deploy to Firebase Hosting + Functions
         env:
           GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /tmp/sa.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
-          firebase deploy --only hosting --project aerotech-ops
+          firebase deploy --only hosting,functions --project aerotech-ops

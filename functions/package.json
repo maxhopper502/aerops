@@ -1,0 +1,10 @@
+{
+  "name": "aerotech-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for AeroOps",
+  "main": "index.js",
+  "engines": {"node": "18"},
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}

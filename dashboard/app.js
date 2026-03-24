@@ -2711,18 +2711,17 @@ async function xeroExchangeCode(){
   const verifier=localStorage.getItem('at_xeroVerifier')||'';
   const redirectUri=localStorage.getItem('at_xeroRedirectUri')||'https://app.aerops.com.au/';
   try{
-    // Web app token exchange — uses client_secret (+ optional code_verifier for PKCE)
-    const bodyParams={
-      grant_type:'authorization_code',
-      code,client_id:clientId,
-      redirect_uri:redirectUri
-    };
-    if(clientSecret) bodyParams.client_secret=clientSecret;
-    if(verifier) bodyParams.code_verifier=verifier;
-    const resp=await fetch('https://identity.xero.com/connect/token',{
+    // Use our Firebase proxy to avoid CORS — browser can't call Xero token endpoint directly
+    const proxyUrl='https://us-central1-aerotech-ops.cloudfunctions.net/xeroToken';
+    const resp=await fetch(proxyUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams(bodyParams).toString()
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        grantType:'authorization_code',
+        code,clientId,clientSecret,
+        redirectUri,
+        codeVerifier:verifier||undefined
+      })
     });
     const data=await resp.json();
     if(data.access_token){
@@ -2756,12 +2755,11 @@ async function xeroRefreshToken(){
   const clientSecret=localStorage.getItem('at_xeroClientSecret')||'';
   if(!refresh||!clientId) return false;
   try{
-    const params={grant_type:'refresh_token',refresh_token:refresh,client_id:clientId};
-    if(clientSecret) params.client_secret=clientSecret;
-    const resp=await fetch('https://identity.xero.com/connect/token',{
+    const proxyUrl='https://us-central1-aerotech-ops.cloudfunctions.net/xeroToken';
+    const resp=await fetch(proxyUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams(params).toString()
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({grantType:'refresh_token',refreshToken:refresh,clientId,clientSecret})
     });
     const data=await resp.json();
     if(data.access_token){
