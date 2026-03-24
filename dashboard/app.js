@@ -3100,3 +3100,15 @@ setTimeout(()=>{const s=document.getElementById('base-sel');if(s)s.value=current
 setTimeout(()=>{if(!jobs.length)loadSampleData();renderJobs();},300);
 renderJobs();
 initForm();
+
+// Global error catcher — surface JS errors visibly
+window.addEventListener('error',(e)=>{
+  console.error('GLOBAL ERROR:',e.message,'at',e.filename,e.lineno);
+  const el=document.getElementById('sync-dot');
+  if(el){el.textContent='⚠️ JS Error: '+e.message.slice(0,60);el.style.color='#ef4444';}
+});
+window.addEventListener('unhandledrejection',(e)=>{
+  console.error('UNHANDLED PROMISE:',e.reason);
+  const el=document.getElementById('sync-dot');
+  if(el){el.textContent='⚠️ '+String(e.reason).slice(0,60);el.style.color='#ef4444';}
+});
