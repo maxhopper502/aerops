@@ -2659,50 +2659,122 @@ window.updateStatus   = updateStatus;
 window.deleteJob      = deleteJob;
 window.editJob        = editJob;
 
-// ═══ XERO OAUTH ═══
-const XERO_SCOPES='openid profile email accounting.invoices accounting.contacts';
-function xeroConnect(){
-  const clientId=(document.getElementById('cfg-xero-client-id')?.value||localStorage.getItem('at_xeroClientId')||'').trim();
-  if(!clientId){alert('Paste your Xero Client ID first.');return;}
-  localStorage.setItem('at_xeroClientId',clientId);
-  // Generate PKCE verifier + challenge
+// ═══ XERO OAUTH (PKCE) ═══
+const XERO_SCOPES='openid profile email accounting.transactions accounting.contacts offline_access';
+
+// Generate PKCE code verifier + challenge
+async function pkceChallenge(){
   const verifier=Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
+  const challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  return{verifier,challenge};
+}
+
+async function xeroConnect(){
+  const clientId=(document.getElementById('cfg-xero-client-id')?.value||localStorage.getItem('at_xeroClientId')||'').trim();
+  if(!clientId){alert('Paste your Xero Client ID first in Settings → Xero.');return;}
+  localStorage.setItem('at_xeroClientId',clientId);
+  const {verifier,challenge}=await pkceChallenge();
   localStorage.setItem('at_xeroVerifier',verifier);
   const state=Math.random().toString(36).slice(2);
   localStorage.setItem('at_xeroState',state);
-  // Build auth URL
-  const redirectUri=localStorage.getItem('at_xeroRedirectUri')||window.location.origin+window.location.pathname;
+  const redirectUri=window.location.origin+window.location.pathname;
+  localStorage.setItem('at_xeroRedirectUri',redirectUri);
   const url='https://login.xero.com/identity/connect/authorize?'+new URLSearchParams({
     response_type:'code',client_id:clientId,redirect_uri:redirectUri,
-    scope:XERO_SCOPES,state:state
+    scope:XERO_SCOPES,state:state,
+    code_challenge:challenge,code_challenge_method:'S256'
   });
   window.location.href=url;
 }
+
 function xeroDisconnect(){
-  ['at_xeroToken','at_xeroRefresh','at_xeroTenantId','at_xeroExpiry','at_xeroState','at_xeroVerifier'].forEach(k=>localStorage.removeItem(k));
+  ['at_xeroToken','at_xeroRefresh','at_xeroTenantId','at_xeroExpiry','at_xeroState','at_xeroVerifier','at_xeroRedirectUri'].forEach(k=>localStorage.removeItem(k));
   const el=document.getElementById('xero-status');
   if(el){el.textContent='⚪ Disconnected';el.style.color='#6b7280';}
 }
+
 async function xeroExchangeCode(){
-  // Called after redirect back from Xero with ?code=
   const params=new URLSearchParams(window.location.search);
   const code=params.get('code'); const state=params.get('state');
   if(!code||state!==localStorage.getItem('at_xeroState')) return;
-  // Clear URL params without reload
+  // Clear URL params without reloading page
   window.history.replaceState({},'',window.location.pathname);
   const clientId=localStorage.getItem('at_xeroClientId')||'';
-  const redirectUri=window.location.origin+window.location.pathname;
+  const verifier=localStorage.getItem('at_xeroVerifier')||'';
+  const redirectUri=localStorage.getItem('at_xeroRedirectUri')||window.location.origin+window.location.pathname;
   try{
-    // Note: PKCE token exchange requires a server for the client_secret.
-    // For now, store the auth code and show instructions.
-    alert('Xero auth code received. To complete: set up a simple backend endpoint or use Xero PKCE (no secret needed) — contact your developer to finalise the token exchange step.');
-    localStorage.setItem('at_xeroAuthCode',code);
-  }catch(e){console.error('Xero token exchange failed',e);}
+    // PKCE token exchange — no client secret needed
+    const body=new URLSearchParams({
+      grant_type:'authorization_code',
+      code,client_id:clientId,
+      redirect_uri:redirectUri,
+      code_verifier:verifier
+    });
+    const resp=await fetch('https://identity.xero.com/connect/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:body.toString()
+    });
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('at_xeroToken',data.access_token);
+      if(data.refresh_token) localStorage.setItem('at_xeroRefresh',data.refresh_token);
+      const expiry=Date.now()+(data.expires_in||1800)*1000;
+      localStorage.setItem('at_xeroExpiry',String(expiry));
+      // Get tenant (organisation) ID
+      const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+data.access_token,'Content-Type':'application/json'}});
+      const connections=await connResp.json();
+      if(connections&&connections[0]){
+        localStorage.setItem('at_xeroTenantId',connections[0].tenantId);
+        localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+      }
+      const el=document.getElementById('xero-status');
+      if(el){el.textContent='✅ Connected'+(connections[0]?' — '+connections[0].tenantName:'');el.style.color='#16a34a';}
+      alert('✅ Xero connected successfully! You can now push invoices directly to Xero.');
+    } else {
+      console.error('Xero token error',data);
+      alert('Xero connection failed: '+(data.error_description||data.error||JSON.stringify(data).slice(0,200))+'\n\nMake sure your Xero app is set up as a PKCE app (not Web app) at developer.xero.com');
+    }
+  }catch(e){
+    console.error('Xero exchange error',e);
+    alert('Xero connection error: '+e.message);
+  }
+}
+
+async function xeroRefreshToken(){
+  const refresh=localStorage.getItem('at_xeroRefresh');
+  const clientId=localStorage.getItem('at_xeroClientId');
+  if(!refresh||!clientId) return false;
+  try{
+    const resp=await fetch('https://identity.xero.com/connect/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'refresh_token',refresh_token:refresh,client_id:clientId}).toString()
+    });
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('at_xeroToken',data.access_token);
+      if(data.refresh_token) localStorage.setItem('at_xeroRefresh',data.refresh_token);
+      localStorage.setItem('at_xeroExpiry',String(Date.now()+(data.expires_in||1800)*1000));
+      return true;
+    }
+  }catch(e){console.error('Xero refresh failed',e);}
+  return false;
+}
+
+async function getXeroToken(){
+  const expiry=parseInt(localStorage.getItem('at_xeroExpiry')||'0');
+  if(Date.now()>expiry-60000){
+    const ok=await xeroRefreshToken();
+    if(!ok) return null;
+  }
+  return localStorage.getItem('at_xeroToken');
 }
 async function xeroPushInvoice(jobId){
-  const token=localStorage.getItem('at_xeroToken');
+  const token=await getXeroToken();
   const tenantId=localStorage.getItem('at_xeroTenantId');
-  if(!token||!tenantId){alert('Xero not connected. Go to Settings → Xero to connect.');return;}
+  if(!token||!tenantId){alert('Xero not connected. Go to Settings → Xero tab and tap "Connect to Xero".');return;}
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   const est=estimateJob(j);
   const invStatus=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
@@ -2745,6 +2817,7 @@ async function xeroPushInvoice(jobId){
 window.xeroConnect=xeroConnect;
 window.xeroDisconnect=xeroDisconnect;
 window.xeroPushInvoice=xeroPushInvoice;
+window.xeroRefreshToken=xeroRefreshToken;
 // Check for Xero redirect on page load
 if(window.location.search.includes('code=')&&window.location.search.includes('state=')) xeroExchangeCode();
 
