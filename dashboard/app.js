@@ -1870,8 +1870,8 @@ function closeStaffModal(){ document.getElementById('staff-modal-overlay').class
 function closeStaffOnBg(e){ if(e.target===document.getElementById('staff-modal-overlay')) closeStaffModal(); }
 async function saveStaff(){
   // Save Xero settings to localStorage
-  const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci&&_sxci.value.trim())localStorage.setItem('at_xeroClientId',_sxci.value.trim());
-  const _sxcs=document.getElementById('cfg-xero-client-secret'); if(_sxcs&&_sxcs.value.trim())localStorage.setItem('at_xeroClientSecret',_sxcs.value.trim());
+  const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci) { if(_sxci.value.trim()) localStorage.setItem('at_xeroClientId',_sxci.value.trim()); else localStorage.removeItem('at_xeroClientId'); }
+  const _sxcs=document.getElementById('cfg-xero-client-secret'); if(_sxcs) { if(_sxcs.value.trim()) localStorage.setItem('at_xeroClientSecret',_sxcs.value.trim()); else localStorage.removeItem('at_xeroClientSecret'); }
   const _sxis=document.getElementById('cfg-xero-inv-status'); if(_sxis)localStorage.setItem('at_xeroInvStatus',_sxis.value);
   const _sxtr=document.getElementById('cfg-xero-terms'); if(_sxtr)localStorage.setItem('at_xeroTerms',_sxtr.value);
   const _sxac=document.getElementById('cfg-xero-account'); if(_sxac)localStorage.setItem('at_xeroAccount',_sxac.value.trim());
@@ -2695,9 +2695,12 @@ async function xeroConnect(){
 }
 
 function xeroDisconnect(){
-  ['at_xeroToken','at_xeroRefresh','at_xeroTenantId','at_xeroExpiry','at_xeroState','at_xeroVerifier','at_xeroRedirectUri'].forEach(k=>localStorage.removeItem(k));
+  ['at_xeroToken','at_xeroRefresh','at_xeroTenantId','at_xeroExpiry','at_xeroState','at_xeroVerifier','at_xeroRedirectUri','at_xeroClientSecret','at_xeroClientId'].forEach(k=>localStorage.removeItem(k));
   const el=document.getElementById('xero-status');
-  if(el){el.textContent='⚪ Disconnected';el.style.color='#6b7280';}
+  if(el){el.textContent='⚪ Disconnected — credentials cleared';el.style.color='#6b7280';}
+  // Clear the UI fields too
+  const ci=document.getElementById('cfg-xero-client-id'); if(ci) ci.value='';
+  const cs=document.getElementById('cfg-xero-client-secret'); if(cs) cs.value='';
 }
 
 async function xeroExchangeCode(){
