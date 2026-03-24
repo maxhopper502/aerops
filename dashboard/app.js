@@ -1,5 +1,5 @@
 
-// ═══ FIREBASE ═══
+// ═══ FIREBASE ═══ v28aa033
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getFirestore,collection,doc,setDoc,deleteDoc,getDocs,onSnapshot,updateDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const FB={apiKey:"AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI",authDomain:"aerotech-ops.firebaseapp.com",projectId:"aerotech-ops",storageBucket:"aerotech-ops.firebasestorage.app",messagingSenderId:"645848371961",appId:"1:645848371961:web:4415c4d7623219fd31c828"};
