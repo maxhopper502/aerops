@@ -2662,7 +2662,7 @@ window.deleteJob      = deleteJob;
 window.editJob        = editJob;
 
 // ═══ XERO OAUTH (PKCE) ═══
-const XERO_SCOPES='openid profile email accounting.transactions accounting.contacts offline_access';
+const XERO_SCOPES='openid profile email accounting.invoices accounting.contacts offline_access';
 
 // Generate PKCE code verifier + challenge
 async function pkceChallenge(){
