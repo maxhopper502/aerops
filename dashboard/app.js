@@ -100,7 +100,7 @@ function lsSave(){localStorage.setItem('at_jobs',JSON.stringify(jobs));}
 async function saveJob(j){lsSave();if(!firestoreOK)return;syncBadge('saving');try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');}}
 async function deleteJobFromDB(id){jobs=jobs.filter(j=>j.id!==id);lsSave();if(!firestoreOK)return;try{await deleteDoc(doc(db,'jobs',id));}catch(e){console.warn(e);}}
 async function saveJobs(){lsSave();if(!firestoreOK)return;syncBadge('saving');for(const j of jobs){try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');return;}}syncBadge('live');}
-function loadJobs(){jobs=lsLoad();window._allJobs=jobs;if(!firestoreOK){syncBadge('offline');return;}try{if(unsub)unsub();unsub=onSnapshot(collection(db,'jobs'),(snap)=>{jobs=snap.docs.map(d=>({id:d.id,...d.data()}));window._allJobs=jobs;lsSave();renderJobs();if(currentTab==='scheduler')renderScheduler();if(currentTab==='records')renderRecords();syncBadge('live');const _ov=document.getElementById('modal-overlay');if(_ov&&_ov.classList.contains('open')&&window._openJobId){openJob(window._openJobId);};
+function loadJobs(){jobs=lsLoad();window._allJobs=jobs;if(!firestoreOK){syncBadge('offline');return;}try{if(unsub)unsub();unsub=onSnapshot(collection(db,'jobs'),(snap)=>{jobs=snap.docs.map(d=>({id:d.id,...d.data()}));window._allJobs=jobs;lsSave();renderJobs();if(currentTab==='scheduler')renderScheduler();if(currentTab==='records')renderRecords();if(currentTab==='pilotdone')renderPilotDone();if(currentTab==='priced')renderPriced();if(currentTab==='invoiced')renderInvoiced();syncBadge('live');const _ov=document.getElementById('modal-overlay');if(_ov&&_ov.classList.contains('open')&&window._openJobId){openJob(window._openJobId);};
   // Auto-calculate estimated times for today so Pilot/Mixer can show them
   setTimeout(()=>{
     const todayDs=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
@@ -243,13 +243,16 @@ function statusLabel(s){return s.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCa
 // ─── Tab switching ────────────────────────────────
 function switchTab(tab){
   currentTab = tab;
-  ['jobs','scheduler','newjob','records'].forEach(t=>{
-    document.getElementById('view-'+t).style.display = t===tab?'':'none';
-    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  ['jobs','pilotdone','priced','invoiced','scheduler','newjob','records'].forEach(t=>{
+    const v=document.getElementById('view-'+t); if(v) v.style.display = t===tab?'':'none';
+    const b=document.getElementById('tab-'+t);  if(b) b.classList.toggle('active',t===tab);
   });
-  if(tab==='scheduler') renderScheduler();
-  if(tab==='records')   renderRecords();
-  if(tab==='newjob')    initForm();
+  if(tab==='scheduler')  renderScheduler();
+  if(tab==='records')    renderRecords();
+  if(tab==='newjob')     initForm();
+  if(tab==='pilotdone')  renderPilotDone();
+  if(tab==='priced')     renderPriced();
+  if(tab==='invoiced')   renderInvoiced();
 }
 
 // ═══════════════════════════════════════════════════
@@ -269,6 +272,8 @@ function renderJobs(){
 
   let filtered = jobs.filter(j=>{
     if(!baseFilter(j)) return false;
+    // Jobs tab only shows active jobs — completed ones move to their own tabs
+    if(status==='all' && ['pilot_complete','priced','invoiced'].includes(j.status)) return false;
     if(status!=='all' && j.status!==status) return false;
     if(type!=='all'   && jobType(j)!==type) return false;
     if(airstrip!=='all' && j.airstrip!==airstrip) return false;
@@ -394,7 +399,7 @@ function openJob(id){
   const aircraftOpts  = AIRCRAFT.map(a=>`<option${j.schedule?.aircraft===a?' selected':''}>${a}</option>`).join('');
   const pilotOpts     = staff.pilots.map(p=>`<option${j.schedule?.pilot===p?' selected':''}>${p}</option>`).join('');
   const mixerOpts     = staff.mixers.map(m=>`<option${j.schedule?.mixer===m?' selected':''}>${m}</option>`).join('');
-  const statusOpts    = ['new','quoted','scheduled','in_progress','pilot_complete','invoiced'].map(s=>`<option value="${s}"${j.status===s?' selected':''}>${statusLabel(s)}</option>`).join('');
+  const statusOpts    = ['new','quoted','scheduled','in_progress','pilot_complete','priced','invoiced'].map(s=>`<option value="${s}"${j.status===s?' selected':''}>${statusLabel(s)}</option>`).join('');
 
   const paddockRows = (j.paddocks||[]).filter(p=>p.name||p.ha).map(p=>`<tr><td>${p.name||'—'}</td><td>${p.ha||0} ha</td><td>${p.cropType||'—'}</td></tr>`).join('');
   const productRows = (j.products||[]).filter(p=>p.name).map(p=>`<tr><td>${p.name}</td><td>${p.type||'—'}</td><td>${p.rate||0} ${p.unit||''}</td><td>${(p.totalQty||p.totalRequired||'—')}</td></tr>`).join('');
@@ -979,6 +984,114 @@ function closeModalOnBg(e){ if(e.target===document.getElementById('modal-overlay
 // SCHEDULER TAB
 // ═══════════════════════════════════════════════════
 function changeWeek(dir){ weekOffset+=dir; renderScheduler(); }
+
+// ═══ SHARED STATUS-FILTERED TAB RENDERER ═══
+function renderStatusTab({statusFilter, listId, countId, searchId, stripId, emptyMsg, badgeColor, badgeLabel, nextStatus, nextLabel, nextColor}){
+  const search=(document.getElementById(searchId)?.value||'').toLowerCase();
+  const strip =document.getElementById(stripId)?.value||'all';
+
+  // Populate airstrip filter
+  const stripEl=document.getElementById(stripId);
+  if(stripEl){
+    const strips=[...new Set(jobs.filter(j=>statusFilter.includes(j.status)).map(j=>j.airstrip).filter(Boolean))].sort();
+    const cur=stripEl.value;
+    stripEl.innerHTML='<option value="all">All Airstrips</option>'+strips.map(s=>`<option${s===cur?' selected':''}>${s}</option>`).join('');
+  }
+
+  let filtered=jobs.filter(j=>{
+    if(!baseFilter(j)) return false;
+    if(!statusFilter.includes(j.status)) return false;
+    if(strip!=='all' && j.airstrip!==strip) return false;
+    if(search && !JSON.stringify(j).toLowerCase().includes(search)) return false;
+    return true;
+  }).sort((a,b)=>(a.preferredDate||'').localeCompare(b.preferredDate||''));
+
+  const cEl=document.getElementById(countId);
+  if(cEl) cEl.textContent=filtered.length+' job'+(filtered.length!==1?'s':'');
+  const el=document.getElementById(listId);
+  if(!el) return;
+
+  if(!filtered.length){
+    el.innerHTML=`<div class="empty-state"><div class="esi">✅</div><p>${emptyMsg}</p></div>`;
+    return;
+  }
+
+  el.innerHTML=filtered.map(j=>{
+    const est=estimateJob(j);
+    const type2=jobType(j);
+    const pads=(j.paddocks||[]).filter(p=>p.name||p.ha).length;
+    const prods=(j.products||[]).filter(p=>p.name).length;
+    const sched=j.schedule?.aircraft?`✈️ ${j.schedule.aircraft} · ${j.schedule.pilot||'—'}`:'';
+    const cost=est.cost>0?`<span style="font-weight:800;color:var(--green)">$${est.cost.toLocaleString('en-AU',{maximumFractionDigits:0})}</span>`:'';
+    const invoice=j.billingTotal>0?`<span style="font-weight:800;color:#7c3aed">$${Number(j.billingTotal).toLocaleString('en-AU',{maximumFractionDigits:0})} inv</span>`:'';
+    return `<div class="job-card" onclick="openJob('${j.id}')" style="cursor:pointer;border-left:4px solid ${badgeColor}">
+      <div class="job-header">
+        <div>
+          <span class="job-client">${j.client||'—'}</span>
+          <span class="job-sub">${j.address||''} · ${j.airstrip||''}</span>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="badge" style="background:${badgeColor}">${badgeLabel}</span>
+          <span class="badge badge-${type2.toLowerCase()}">${type2.toUpperCase()}</span>
+        </div>
+      </div>
+      <div class="job-meta">
+        ${sched?`<span>${sched}</span>`:''}
+        ${j.preferredDate?`<span>📅 ${j.preferredDate}</span>`:''}
+        ${est.totalHa?`<span>🌾 ${est.totalHa} ha</span>`:''}
+        ${cost}${invoice}
+        ${pads?`<span>📍 ${pads} paddock${pads!==1?'s':''}</span>`:''}
+        ${prods?`<span>🧪 ${prods} product${prods!==1?'s':''}</span>`:''}
+      </div>
+      ${nextStatus?`<div style="margin-top:8px;text-align:right">
+        <button class="btn btn-sm" style="background:${nextColor};color:#fff" onclick="event.stopPropagation();updateStatus('${j.id}','${nextStatus}')">
+          ${nextLabel}
+        </button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderPilotDone(){
+  renderStatusTab({
+    statusFilter:['pilot_complete'], listId:'pd-list', countId:'pd-count',
+    searchId:'pd-search', stripId:'pd-airstrip',
+    emptyMsg:'No jobs awaiting pricing',
+    badgeColor:'#7c3aed', badgeLabel:'PILOT COMPLETE',
+    nextStatus:'priced', nextLabel:'✅ Mark as Priced →', nextColor:'#16a34a'
+  });
+}
+
+function renderPriced(){
+  renderStatusTab({
+    statusFilter:['priced'], listId:'pr-list', countId:'pr-count',
+    searchId:'pr-search', stripId:'pr-airstrip',
+    emptyMsg:'No jobs awaiting invoicing',
+    badgeColor:'#16a34a', badgeLabel:'PRICED',
+    nextStatus:null, nextLabel:'', nextColor:''
+  });
+}
+
+function renderInvoiced(){
+  renderStatusTab({
+    statusFilter:['invoiced'], listId:'inv-list', countId:'inv-count',
+    searchId:'inv-search', stripId:'inv-airstrip',
+    emptyMsg:'No invoiced jobs',
+    badgeColor:'#6b7280', badgeLabel:'INVOICED',
+    nextStatus:null, nextLabel:'', nextColor:''
+  });
+}
+
+function updateStatus(jobId, newStatus){
+  const j=jobs.find(j=>j.id===jobId); if(!j) return;
+  j.status=newStatus;
+  lsSave();
+  if(firestoreOK){ updateDoc(doc(db,'jobs',jobId),{status:newStatus}).catch(e=>console.warn(e)); }
+  if(currentTab==='pilotdone') renderPilotDone();
+  if(currentTab==='priced') renderPriced();
+  if(currentTab==='invoiced') renderInvoiced();
+  renderJobs();
+}
 
 function renderScheduler(){
   const now  = new Date();
@@ -2855,6 +2968,10 @@ async function xeroPushInvoice(jobId){
   }catch(e){alert('Xero push failed: '+e.message);}
 }
 window.xeroConnect=xeroConnect;
+window.updateStatus=updateStatus;
+window.renderPilotDone=renderPilotDone;
+window.renderPriced=renderPriced;
+window.renderInvoiced=renderInvoiced;
 window.xeroDisconnect=xeroDisconnect;
 window.xeroPushInvoice=xeroPushInvoice;
 window.xeroRefreshToken=xeroRefreshToken;
