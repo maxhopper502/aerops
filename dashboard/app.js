@@ -1861,8 +1861,8 @@ function openStaffModal(){
   const _xtr=document.getElementById('cfg-xero-terms'); if(_xtr)_xtr.value=localStorage.getItem('at_xeroTerms')||'14';
   const _xac=document.getElementById('cfg-xero-account'); if(_xac)_xac.value=localStorage.getItem('at_xeroAccount')||'';
   const _xtx=document.getElementById('cfg-xero-tax'); if(_xtx)_xtx.value=localStorage.getItem('at_xeroTax')||'OUTPUT';
-  const _xru=document.getElementById('xero-redirect-uri'); if(_xru)_xru.textContent=window.location.origin+window.location.pathname;
-  const _xruo=document.getElementById('cfg-xero-redirect-uri-override'); if(_xruo)_xruo.value=window.location.origin+window.location.pathname;
+  const _xru=document.getElementById('xero-redirect-uri'); if(_xru)_xru.textContent='https://app.aerops.com.au/';
+  const _xruo=document.getElementById('cfg-xero-redirect-uri-override'); if(_xruo)_xruo.value='https://app.aerops.com.au/';
   const _xst=document.getElementById('xero-status'); if(_xst){const tok=localStorage.getItem('at_xeroToken');_xst.textContent=tok?'✅ Connected to Xero':'⚪ Not connected';_xst.style.color=tok?'#16a34a':'#6b7280';}
   document.getElementById('staff-modal-overlay').classList.add('open');
 }
@@ -2683,7 +2683,8 @@ async function xeroConnect(){
   localStorage.setItem('at_xeroVerifier',verifier);
   const state=Math.random().toString(36).slice(2);
   localStorage.setItem('at_xeroState',state);
-  const redirectUri=window.location.origin+window.location.pathname;
+  // Always use the canonical redirect URI — must match exactly what's in Xero developer app
+  const redirectUri='https://app.aerops.com.au/';
   localStorage.setItem('at_xeroRedirectUri',redirectUri);
   const url='https://login.xero.com/identity/connect/authorize?'+new URLSearchParams({
     response_type:'code',client_id:clientId,redirect_uri:redirectUri,
@@ -2708,7 +2709,7 @@ async function xeroExchangeCode(){
   const clientId=localStorage.getItem('at_xeroClientId')||'';
   const clientSecret=localStorage.getItem('at_xeroClientSecret')||'';
   const verifier=localStorage.getItem('at_xeroVerifier')||'';
-  const redirectUri=localStorage.getItem('at_xeroRedirectUri')||window.location.origin+window.location.pathname;
+  const redirectUri=localStorage.getItem('at_xeroRedirectUri')||'https://app.aerops.com.au/';
   try{
     // Web app token exchange — uses client_secret (+ optional code_verifier for PKCE)
     const bodyParams={
