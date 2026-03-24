@@ -100,13 +100,48 @@ function lsSave(){localStorage.setItem('at_jobs',JSON.stringify(jobs));}
 async function saveJob(j){lsSave();if(!firestoreOK)return;syncBadge('saving');try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');}}
 async function deleteJobFromDB(id){jobs=jobs.filter(j=>j.id!==id);lsSave();if(!firestoreOK)return;try{await deleteDoc(doc(db,'jobs',id));}catch(e){console.warn(e);}}
 async function saveJobs(){lsSave();if(!firestoreOK)return;syncBadge('saving');for(const j of jobs){try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');return;}}syncBadge('live');}
-function loadJobs(){jobs=lsLoad();window._allJobs=jobs;if(!firestoreOK){syncBadge('offline');return;}try{if(unsub)unsub();unsub=onSnapshot(collection(db,'jobs'),(snap)=>{jobs=snap.docs.map(d=>({id:d.id,...d.data()}));window._allJobs=jobs;lsSave();renderJobs();if(currentTab==='scheduler')renderScheduler();if(currentTab==='records')renderRecords();if(currentTab==='pilotdone')renderPilotDone();if(currentTab==='priced')renderPriced();if(currentTab==='invoiced')renderInvoiced();syncBadge('live');const _ov=document.getElementById('modal-overlay');if(_ov&&_ov.classList.contains('open')&&window._openJobId){openJob(window._openJobId);};
-  // Auto-calculate estimated times for today so Pilot/Mixer can show them
-  setTimeout(()=>{
-    const todayDs=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
-    silentCalcTimes(todayDs);
-  },800);
-},(e)=>{console.warn(e);syncBadge('error');});}catch(e){syncBadge('error');}}
+function loadJobs(){
+  jobs=lsLoad();window._allJobs=jobs;
+  if(!firestoreOK){syncBadge('offline');return;}
+  // Use getDocs (HTTP) first for reliability, then set up onSnapshot for live updates
+  getDocs(collection(db,'jobs')).then(snap=>{
+    jobs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    window._allJobs=jobs;lsSave();renderJobs();
+    if(currentTab==='scheduler')renderScheduler();
+    if(currentTab==='records')renderRecords();
+    if(currentTab==='pilotdone')renderPilotDone();
+    if(currentTab==='priced')renderPriced();
+    if(currentTab==='invoiced')renderInvoiced();
+    syncBadge('live');
+    const _ov=document.getElementById('modal-overlay');
+    if(_ov&&_ov.classList.contains('open')&&window._openJobId){openJob(window._openJobId);}
+    setTimeout(()=>{
+      const todayDs=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
+      silentCalcTimes(todayDs);
+    },800);
+    // Now set up live listener after initial load succeeds
+    try{
+      if(unsub)unsub();
+      unsub=onSnapshot(collection(db,'jobs'),(snap2)=>{
+        jobs=snap2.docs.map(d=>({id:d.id,...d.data()}));
+        window._allJobs=jobs;lsSave();renderJobs();
+        if(currentTab==='scheduler')renderScheduler();
+        if(currentTab==='records')renderRecords();
+        if(currentTab==='pilotdone')renderPilotDone();
+        if(currentTab==='priced')renderPriced();
+        if(currentTab==='invoiced')renderInvoiced();
+        syncBadge('live');
+        const _ov2=document.getElementById('modal-overlay');
+        if(_ov2&&_ov2.classList.contains('open')&&window._openJobId){openJob(window._openJobId);}
+      },(e)=>{console.warn('onSnapshot error (non-fatal):',e);});
+    }catch(e){console.warn('onSnapshot setup failed (non-fatal):',e);}
+  }).catch(e=>{
+    console.warn('getDocs failed:',e);
+    syncBadge('error');
+    const el=document.getElementById('sync-dot');
+    if(el){el.textContent='⚠️ '+e.message.slice(0,50);el.style.color='#ef4444';}
+  });
+}
 
 // ─── Job type detection ───────────────────────────
 function jobType(job){
