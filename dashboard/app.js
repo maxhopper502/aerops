@@ -1855,7 +1855,7 @@ function openStaffModal(){
   // Start on pilots tab
   cfgTab('pilots');
   // Xero settings — load from localStorage
-  const _xci=document.getElementById('cfg-xero-client-id'); if(_xci)_xci.value=localStorage.getItem('at_xeroClientId')||'';
+  const _xci=document.getElementById('cfg-xero-client-id'); if(_xci)_xci.value=localStorage.getItem('at_xeroClientId')||getStaff().xeroClientId||'';
   const _xcs=document.getElementById('cfg-xero-client-secret'); if(_xcs)_xcs.value=localStorage.getItem('at_xeroClientSecret')||'';
   const _xis=document.getElementById('cfg-xero-inv-status'); if(_xis)_xis.value=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
   const _xtr=document.getElementById('cfg-xero-terms'); if(_xtr)_xtr.value=localStorage.getItem('at_xeroTerms')||'14';
@@ -1893,6 +1893,7 @@ async function saveStaff(){
     rate802: aircraftObjs.filter(a=>a.type==='AT-802').reduce((mn,a)=>Math.min(mn,a.rate),9999)||3300,
     rate502: aircraftObjs.filter(a=>a.type==='AT-502').reduce((mn,a)=>Math.min(mn,a.rate),9999)||2200,
     herbLoading: gv('cfg-herb-loading',10),
+    xeroClientId: (document.getElementById('cfg-xero-client-id')?.value||'').trim()||undefined,
     hopperCaps802:{
       'Spray':     gv('cfg-802-spray',3020),
       'Urea':      gv('cfg-802-urea', 2000),
@@ -2940,6 +2941,10 @@ function loadSettings(){
       if(remote.stripObjs){
         Object.keys(AIRSTRIP_RATES).forEach(k=>delete AIRSTRIP_RATES[k]);
         remote.stripObjs.forEach(s=>{if(s.name&&s.rate!=null)AIRSTRIP_RATES[s.name]=parseFloat(s.rate);});
+      }
+      // Sync Xero Client ID to all devices automatically
+      if(remote.xeroClientId && !localStorage.getItem('at_xeroClientId')){
+        localStorage.setItem('at_xeroClientId', remote.xeroClientId);
       }
       // Re-render to pick up new pilots/aircraft lists
       renderJobs();
