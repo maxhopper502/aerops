@@ -2711,17 +2711,19 @@ async function xeroExchangeCode(){
   const verifier=localStorage.getItem('at_xeroVerifier')||'';
   const redirectUri=localStorage.getItem('at_xeroRedirectUri')||'https://app.aerops.com.au/';
   try{
-    // Use our Firebase proxy to avoid CORS — browser can't call Xero token endpoint directly
-    const proxyUrl='https://us-central1-aerotech-ops.cloudfunctions.net/xeroToken';
-    const resp=await fetch(proxyUrl,{
+    // PKCE flow: call Xero token endpoint directly with code_verifier (no client_secret needed)
+    // Web app flow: also works if clientSecret is provided
+    const bodyParams=new URLSearchParams();
+    bodyParams.set('grant_type','authorization_code');
+    bodyParams.set('code',code);
+    bodyParams.set('client_id',clientId);
+    bodyParams.set('redirect_uri',redirectUri);
+    if(verifier) bodyParams.set('code_verifier',verifier);
+    if(clientSecret) bodyParams.set('client_secret',clientSecret);
+    const resp=await fetch('https://identity.xero.com/connect/token',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        grantType:'authorization_code',
-        code,clientId,clientSecret,
-        redirectUri,
-        codeVerifier:verifier||undefined
-      })
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:bodyParams.toString()
     });
     const data=await resp.json();
     if(data.access_token){
@@ -2755,11 +2757,15 @@ async function xeroRefreshToken(){
   const clientSecret=localStorage.getItem('at_xeroClientSecret')||'';
   if(!refresh||!clientId) return false;
   try{
-    const proxyUrl='https://us-central1-aerotech-ops.cloudfunctions.net/xeroToken';
-    const resp=await fetch(proxyUrl,{
+    const params=new URLSearchParams();
+    params.set('grant_type','refresh_token');
+    params.set('refresh_token',refresh);
+    params.set('client_id',clientId);
+    if(clientSecret) params.set('client_secret',clientSecret);
+    const resp=await fetch('https://identity.xero.com/connect/token',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({grantType:'refresh_token',refreshToken:refresh,clientId,clientSecret})
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:params.toString()
     });
     const data=await resp.json();
     if(data.access_token){
