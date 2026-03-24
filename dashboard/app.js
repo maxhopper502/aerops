@@ -2736,15 +2736,22 @@ async function xeroExchangeCode(){
       if(data.refresh_token) localStorage.setItem('at_xeroRefresh',data.refresh_token);
       const expiry=Date.now()+(data.expires_in||1800)*1000;
       localStorage.setItem('at_xeroExpiry',String(expiry));
-      // Get tenant (organisation) ID
-      const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+data.access_token,'Content-Type':'application/json'}});
-      const connections=await connResp.json();
-      if(connections&&connections[0]){
-        localStorage.setItem('at_xeroTenantId',connections[0].tenantId);
-        localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+      // Get tenant (organisation) ID — wrap in try/catch as api.xero.com/connections may have CORS on some browsers
+      let tenantName='';
+      try{
+        const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+data.access_token,'Content-Type':'application/json'}});
+        const connections=await connResp.json();
+        if(connections&&connections[0]){
+          localStorage.setItem('at_xeroTenantId',connections[0].tenantId);
+          localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+          tenantName=connections[0].tenantName||'';
+        }
+      }catch(connErr){
+        // CORS may block this — tenant ID will be fetched on first invoice push
+        console.warn('Could not fetch Xero tenant ID yet — will retry on invoice push:',connErr.message);
       }
       const el=document.getElementById('xero-status');
-      if(el){el.textContent='✅ Connected'+(connections[0]?' — '+connections[0].tenantName:'');el.style.color='#16a34a';}
+      if(el){el.textContent='✅ Connected'+(tenantName?' — '+tenantName:'');el.style.color='#16a34a';}
       alert('✅ Xero connected successfully! You can now push invoices directly to Xero.');
     } else {
       console.error('Xero token error',data);
@@ -2793,8 +2800,21 @@ async function getXeroToken(){
 }
 async function xeroPushInvoice(jobId){
   const token=await getXeroToken();
-  const tenantId=localStorage.getItem('at_xeroTenantId');
-  if(!token||!tenantId){alert('Xero not connected. Go to Settings → Xero tab and tap "Connect to Xero".');return;}
+  if(!token){alert('Xero not connected. Go to Settings → Xero tab and tap "Connect to Xero".');return;}
+  // If tenant ID wasn't captured during connect (CORS), fetch it now
+  let tenantId=localStorage.getItem('at_xeroTenantId');
+  if(!tenantId){
+    try{
+      const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+      const connections=await connResp.json();
+      if(connections&&connections[0]){
+        tenantId=connections[0].tenantId;
+        localStorage.setItem('at_xeroTenantId',tenantId);
+        localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+      }
+    }catch(e){console.warn('Tenant fetch failed:',e);}
+  }
+  if(!tenantId){alert('Xero connected but could not get organisation ID. Please disconnect and reconnect in Settings → Xero.');return;}
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   const est=estimateJob(j);
   const invStatus=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
