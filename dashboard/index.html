@@ -687,6 +687,11 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
             <label style="font-size:.72rem;font-weight:700;color:var(--muted)">XERO CLIENT ID</label>
             <input type="text" id="cfg-xero-client-id" placeholder="Paste your Xero Client ID here" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;font-family:monospace"/>
           </div>
+          <div class="fg" style="margin-bottom:10px">
+            <label style="font-size:.72rem;font-weight:700;color:var(--muted)">XERO CLIENT SECRET <span style="font-weight:400;color:#6b7280">(from Configuration page → Client secret 1)</span></label>
+            <input type="password" id="cfg-xero-client-secret" placeholder="Paste your Xero Client Secret here" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;font-family:monospace"/>
+            <div style="font-size:.68rem;color:#6b7280;margin-top:3px">Stored locally on this device only — never sent anywhere except Xero's servers.</div>
+          </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button onclick="xeroConnect()" class="btn btn-navy btn-sm">🔗 Connect to Xero</button>
             <button onclick="xeroDisconnect()" class="btn btn-sm" style="background:#fee2e2;color:#dc2626">Disconnect</button>

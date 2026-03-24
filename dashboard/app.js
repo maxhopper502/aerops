@@ -1856,6 +1856,7 @@ function openStaffModal(){
   cfgTab('pilots');
   // Xero settings — load from localStorage
   const _xci=document.getElementById('cfg-xero-client-id'); if(_xci)_xci.value=localStorage.getItem('at_xeroClientId')||'';
+  const _xcs=document.getElementById('cfg-xero-client-secret'); if(_xcs)_xcs.value=localStorage.getItem('at_xeroClientSecret')||'';
   const _xis=document.getElementById('cfg-xero-inv-status'); if(_xis)_xis.value=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
   const _xtr=document.getElementById('cfg-xero-terms'); if(_xtr)_xtr.value=localStorage.getItem('at_xeroTerms')||'14';
   const _xac=document.getElementById('cfg-xero-account'); if(_xac)_xac.value=localStorage.getItem('at_xeroAccount')||'';
@@ -1870,6 +1871,7 @@ function closeStaffOnBg(e){ if(e.target===document.getElementById('staff-modal-o
 async function saveStaff(){
   // Save Xero settings to localStorage
   const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci&&_sxci.value.trim())localStorage.setItem('at_xeroClientId',_sxci.value.trim());
+  const _sxcs=document.getElementById('cfg-xero-client-secret'); if(_sxcs&&_sxcs.value.trim())localStorage.setItem('at_xeroClientSecret',_sxcs.value.trim());
   const _sxis=document.getElementById('cfg-xero-inv-status'); if(_sxis)localStorage.setItem('at_xeroInvStatus',_sxis.value);
   const _sxtr=document.getElementById('cfg-xero-terms'); if(_sxtr)localStorage.setItem('at_xeroTerms',_sxtr.value);
   const _sxac=document.getElementById('cfg-xero-account'); if(_sxac)localStorage.setItem('at_xeroAccount',_sxac.value.trim());
@@ -2672,8 +2674,11 @@ async function pkceChallenge(){
 
 async function xeroConnect(){
   const clientId=(document.getElementById('cfg-xero-client-id')?.value||localStorage.getItem('at_xeroClientId')||'').trim();
+  const clientSecret=(document.getElementById('cfg-xero-client-secret')?.value||localStorage.getItem('at_xeroClientSecret')||'').trim();
   if(!clientId){alert('Paste your Xero Client ID first in Settings → Xero.');return;}
+  if(!clientSecret){alert('Paste your Xero Client Secret first in Settings → Xero.\n\nFind it at developer.xero.com → your app → Configuration → Client secret 1.');return;}
   localStorage.setItem('at_xeroClientId',clientId);
+  localStorage.setItem('at_xeroClientSecret',clientSecret);
   const {verifier,challenge}=await pkceChallenge();
   localStorage.setItem('at_xeroVerifier',verifier);
   const state=Math.random().toString(36).slice(2);
@@ -2701,20 +2706,22 @@ async function xeroExchangeCode(){
   // Clear URL params without reloading page
   window.history.replaceState({},'',window.location.pathname);
   const clientId=localStorage.getItem('at_xeroClientId')||'';
+  const clientSecret=localStorage.getItem('at_xeroClientSecret')||'';
   const verifier=localStorage.getItem('at_xeroVerifier')||'';
   const redirectUri=localStorage.getItem('at_xeroRedirectUri')||window.location.origin+window.location.pathname;
   try{
-    // PKCE token exchange — no client secret needed
-    const body=new URLSearchParams({
+    // Web app token exchange — uses client_secret (+ optional code_verifier for PKCE)
+    const bodyParams={
       grant_type:'authorization_code',
       code,client_id:clientId,
-      redirect_uri:redirectUri,
-      code_verifier:verifier
-    });
+      redirect_uri:redirectUri
+    };
+    if(clientSecret) bodyParams.client_secret=clientSecret;
+    if(verifier) bodyParams.code_verifier=verifier;
     const resp=await fetch('https://identity.xero.com/connect/token',{
       method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:body.toString()
+      body:new URLSearchParams(bodyParams).toString()
     });
     const data=await resp.json();
     if(data.access_token){
@@ -2745,12 +2752,15 @@ async function xeroExchangeCode(){
 async function xeroRefreshToken(){
   const refresh=localStorage.getItem('at_xeroRefresh');
   const clientId=localStorage.getItem('at_xeroClientId');
+  const clientSecret=localStorage.getItem('at_xeroClientSecret')||'';
   if(!refresh||!clientId) return false;
   try{
+    const params={grant_type:'refresh_token',refresh_token:refresh,client_id:clientId};
+    if(clientSecret) params.client_secret=clientSecret;
     const resp=await fetch('https://identity.xero.com/connect/token',{
       method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({grant_type:'refresh_token',refresh_token:refresh,client_id:clientId}).toString()
+      body:new URLSearchParams(params).toString()
     });
     const data=await resp.json();
     if(data.access_token){
