@@ -344,7 +344,7 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
       <!-- APPLICATION TYPE -->
       <div class="form-section" style="background:linear-gradient(135deg,#1a3a5c,#2563eb);border-radius:12px;padding:16px 18px;margin-bottom:2px">
         <div style="color:#fff;font-weight:800;font-size:.85rem;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px">Application Type</div>
-        <div style="display:flex;gap:10px">
+        <div style="display:flex;gap:10px;margin-bottom:12px">
           <button type="button" id="apptype-spray" onclick="setAppType('spray')"
             style="flex:1;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;transition:all .2s">
             💧 Spraying
@@ -354,7 +354,24 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
             🌾 Spreading
           </button>
         </div>
+        <!-- Spray sub-types -->
+        <div id="spray-subtype-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('General Spraying',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">💧 General Spraying</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Herbicide',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🌿 Herbicide</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Fungicide',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🍄 Fungicide</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Insecticide',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🐛 Insecticide</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Misting',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;grid-column:1/-1">💨 Misting</button>
+        </div>
+        <!-- Spread sub-types -->
+        <div id="spread-subtype-wrap" style="display:none;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Urea',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🌾 Urea</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Fertiliser',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🌱 Fertiliser</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Snail Bait',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🐌 Snail Bait</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Mouse Bait',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s">🐭 Mouse Bait</button>
+          <button type="button" class="subtype-dash-btn" onclick="setSubtypeDash('Seed',this)" style="padding:10px 8px;border:2px solid rgba(255,255,255,.3);border-radius:9px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;grid-column:1/-1">🌻 Seed</button>
+        </div>
         <input type="hidden" name="appType" id="apptype-hidden" value="spray"/>
+        <input type="hidden" name="appSubType" id="appsubtype-hidden" value=""/>
       </div>
 
       <!-- JOB DETAILS -->

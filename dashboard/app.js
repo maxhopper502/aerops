@@ -1311,7 +1311,7 @@ const SPREAD_PROD=['Fertiliser','Urea','Snail Bait','Mouse Bait','Seed'];
 function setAppType(type){
   document.getElementById('apptype-hidden').value=type;
   const isSpread=(type==='spread');
-  // Button active states
+  // Main button active states
   const sprayBtn=document.getElementById('apptype-spray');
   const spreadBtn=document.getElementById('apptype-spread');
   sprayBtn.style.background  = isSpread?'rgba(255,255,255,.12)':'rgba(255,255,255,.9)';
@@ -1320,6 +1320,17 @@ function setAppType(type){
   spreadBtn.style.background = isSpread?'rgba(255,255,255,.9)':'rgba(255,255,255,.12)';
   spreadBtn.style.color      = isSpread?'#ca8a04':'rgba(255,255,255,.6)';
   spreadBtn.style.borderColor= isSpread?'rgba(255,255,255,.9)':'rgba(255,255,255,.3)';
+  // Show/hide sub-type grids
+  const sprayWrap=document.getElementById('spray-subtype-wrap');
+  const spreadWrap=document.getElementById('spread-subtype-wrap');
+  if(sprayWrap){sprayWrap.style.display=isSpread?'none':'grid';}
+  if(spreadWrap){spreadWrap.style.display=isSpread?'grid':'none';}
+  // Reset sub-type selection
+  document.querySelectorAll('.subtype-dash-btn').forEach(b=>{
+    b.style.background='rgba(255,255,255,.1)';b.style.borderColor='rgba(255,255,255,.3)';b.style.color='rgba(255,255,255,.8)';
+  });
+  const hiddenSub=document.getElementById('appsubtype-hidden');
+  if(hiddenSub) hiddenSub.value='';
   // Show/hide fields
   document.getElementById('row-waterrate').style.display      = isSpread?'none':'';
   document.getElementById('row-spread-extras').style.display  = isSpread?'':'none';
@@ -1332,6 +1343,23 @@ function setAppType(type){
     sel.value = isSpread?'kg/ha':'L/ha';
   });
   recalcAllProductRows();
+}
+
+function setSubtypeDash(subtype, btn){
+  // Highlight selected
+  document.querySelectorAll('.subtype-dash-btn').forEach(b=>{
+    b.style.background='rgba(255,255,255,.1)';b.style.borderColor='rgba(255,255,255,.3)';b.style.color='rgba(255,255,255,.8)';
+  });
+  btn.style.background='rgba(255,255,255,.9)';
+  btn.style.borderColor='rgba(255,255,255,.9)';
+  btn.style.color='#1a3a5c';
+  const hidden=document.getElementById('appsubtype-hidden');
+  if(hidden) hidden.value=subtype;
+  // Auto-set water rate for misting
+  if(subtype==='Misting'){
+    const wr=document.querySelector('[name="waterRate"]');
+    if(wr&&(!wr.value||wr.value==='30')) wr.value=5;
+  }
 }
 
 function getTotalHaFromForm(){
@@ -1408,6 +1436,8 @@ function getFormData(){
     jobNotes:fd.get('jobNotes')||'',
     additionalHazards:fd.get('additionalHazards')||'',
     paddocks, products,
+    appType: fd.get('appType')||'spray',
+    appSubType: fd.get('appSubType')||'',
     hazards:{
       powerlines:fd.get('h_powerlines'),powerlinesDesc:fd.get('h_powerlinesDesc'),
       susceptibleCrops:fd.get('h_susceptibleCrops'),susceptibleDesc:fd.get('h_susceptibleDesc'),
@@ -1456,6 +1486,14 @@ function populateForm(j){
   set('waterRate',j.waterRate);set('hasRecommendation',j.hasRecommendation);
   set('mapUploaded',j.mapUploaded);set('chemDelivery',j.chemDelivery);
   set('additionalComments',j.additionalComments);
+  // Restore app type and sub-type
+  setAppType(j.appType==='spread'?'spread':'spray');
+  if(j.appSubType){
+    setTimeout(()=>{
+      const btns=document.querySelectorAll('.subtype-dash-btn');
+      btns.forEach(b=>{ if(b.textContent.includes(j.appSubType)){ setSubtypeDash(j.appSubType,b); } });
+    },50);
+  }
   const h=j.hazards||{};
   set('h_powerlines',h.powerlines);set('h_powerlinesDesc',h.powerlinesDesc);
   set('h_susceptibleCrops',h.susceptibleCrops);set('h_susceptibleDesc',h.susceptibleDesc);
@@ -3105,6 +3143,7 @@ window.recalcProductRow = recalcProductRow;
 window.recalcAllProductRows = recalcAllProductRows;
 window.recalcWaterTotal = recalcWaterTotal;
 window.setAppType = setAppType;
+window.setSubtypeDash = setSubtypeDash;
 window.removeRow      = removeRow;
 window.toggleReveal   = toggleReveal;
 window.saveNewJob     = saveNewJob;
