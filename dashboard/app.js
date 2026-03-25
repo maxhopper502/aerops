@@ -97,16 +97,64 @@ function getStaff(){
 }
 function lsLoad(){return JSON.parse(localStorage.getItem('at_jobs')||'[]');}
 function lsSave(){localStorage.setItem('at_jobs',JSON.stringify(jobs));}
-async function saveJob(j){lsSave();if(!firestoreOK)return;syncBadge('saving');try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');}}
-async function deleteJobFromDB(id){jobs=jobs.filter(j=>j.id!==id);lsSave();if(!firestoreOK)return;try{await deleteDoc(doc(db,'jobs',id));}catch(e){console.warn(e);}}
-async function saveJobs(){lsSave();if(!firestoreOK)return;syncBadge('saving');for(const j of jobs){try{await setDoc(doc(db,'jobs',j.id),j);}catch(e){console.warn(e);syncBadge('error');return;}}syncBadge('live');}
+async function saveJob(j){lsSave();syncBadge('saving');try{await fsSaveJob(j);syncBadge('live');}catch(e){console.warn('saveJob:',e);syncBadge('error');}}
+async function deleteJobFromDB(id){jobs=jobs.filter(j=>j.id!==id);lsSave();try{await fsDeleteJob(id);}catch(e){console.warn('deleteJob:',e);}}
+async function saveJobs(){lsSave();syncBadge('saving');for(const j of jobs){try{await fsSaveJob(j);}catch(e){console.warn(e);syncBadge('error');return;}}syncBadge('live');}
+// ─── Firestore REST helper (bypasses SDK for reliability) ───
+const FS_BASE='https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents';
+function fsVal(v){
+  if(v===undefined||v===null) return null;
+  if(typeof v==='string') return {stringValue:v};
+  if(typeof v==='boolean') return {booleanValue:v};
+  if(typeof v==='number') return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};
+  if(Array.isArray(v)) return {arrayValue:{values:v.map(fsVal).filter(x=>x!==null)}};
+  if(typeof v==='object') return {mapValue:{fields:Object.fromEntries(Object.entries(v).filter(([,val])=>val!==undefined&&val!==null).map(([k,val])=>[k,fsVal(val)]))}};
+  return {stringValue:String(v)};
+}
+function fsFromVal(v){
+  if(!v) return null;
+  if('stringValue' in v) return v.stringValue;
+  if('integerValue' in v) return parseInt(v.integerValue);
+  if('doubleValue' in v) return v.doubleValue;
+  if('booleanValue' in v) return v.booleanValue;
+  if('nullValue' in v) return null;
+  if('arrayValue' in v) return (v.arrayValue.values||[]).map(fsFromVal);
+  if('mapValue' in v) return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,val])=>[k,fsFromVal(val)]));
+  return null;
+}
+function fsDocToJob(doc){
+  const id=doc.name.split('/').pop();
+  const fields=Object.fromEntries(Object.entries(doc.fields||{}).map(([k,v])=>[k,fsFromVal(v)]));
+  return {id,...fields};
+}
+async function fsGetAllJobs(){
+  let all=[],pageToken=null;
+  do {
+    const url=FS_BASE+'/jobs?pageSize=300'+(pageToken?'&pageToken='+pageToken:'');
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('Firestore REST '+r.status);
+    const d=await r.json();
+    (d.documents||[]).forEach(doc=>all.push(fsDocToJob(doc)));
+    pageToken=d.nextPageToken||null;
+  } while(pageToken);
+  return all;
+}
+async function fsSaveJob(j){
+  const {id,...fields}=j;
+  const body={fields:Object.fromEntries(Object.entries(fields).filter(([,v])=>v!==undefined&&v!==null).map(([k,v])=>[k,fsVal(v)]))};
+  const r=await fetch(FS_BASE+'/jobs/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) console.warn('fsSaveJob error',r.status);
+}
+async function fsDeleteJob(id){
+  const r=await fetch(FS_BASE+'/jobs/'+id,{method:'DELETE'});
+  if(!r.ok) console.warn('fsDeleteJob error',r.status);
+}
+
 function loadJobs(){
   jobs=lsLoad();window._allJobs=jobs;
-  if(!firestoreOK){syncBadge('offline');return;}
-  // Use getDocs (HTTP) first for reliability, then set up onSnapshot for live updates
-  getDocs(collection(db,'jobs')).then(snap=>{
-    jobs=snap.docs.map(d=>({id:d.id,...d.data()}));
-    window._allJobs=jobs;lsSave();renderJobs();
+  // Load via plain REST fetch — works on all browsers/networks without WebSocket
+  function applyJobs(j){
+    jobs=j;window._allJobs=j;lsSave();renderJobs();
     if(currentTab==='scheduler')renderScheduler();
     if(currentTab==='records')renderRecords();
     if(currentTab==='pilotdone')renderPilotDone();
@@ -119,28 +167,23 @@ function loadJobs(){
       const todayDs=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
       silentCalcTimes(todayDs);
     },800);
-    // Now set up live listener after initial load succeeds
-    try{
-      if(unsub)unsub();
-      unsub=onSnapshot(collection(db,'jobs'),(snap2)=>{
-        jobs=snap2.docs.map(d=>({id:d.id,...d.data()}));
-        window._allJobs=jobs;lsSave();renderJobs();
-        if(currentTab==='scheduler')renderScheduler();
-        if(currentTab==='records')renderRecords();
-        if(currentTab==='pilotdone')renderPilotDone();
-        if(currentTab==='priced')renderPriced();
-        if(currentTab==='invoiced')renderInvoiced();
-        syncBadge('live');
-        const _ov2=document.getElementById('modal-overlay');
-        if(_ov2&&_ov2.classList.contains('open')&&window._openJobId){openJob(window._openJobId);}
-      },(e)=>{console.warn('onSnapshot error (non-fatal):',e);});
-    }catch(e){console.warn('onSnapshot setup failed (non-fatal):',e);}
-  }).catch(e=>{
-    console.warn('getDocs failed:',e);
+  }
+  fsGetAllJobs().then(applyJobs).catch(e=>{
+    console.warn('REST load failed, trying SDK:',e);
     syncBadge('error');
     const el=document.getElementById('sync-dot');
-    if(el){el.textContent='⚠️ '+e.message.slice(0,50);el.style.color='#ef4444';}
+    if(el){el.textContent='⚠️ Load error: '+e.message.slice(0,50);el.style.color='#ef4444';}
+    // Fallback to SDK getDocs
+    if(firestoreOK){
+      getDocs(collection(db,'jobs')).then(snap=>{
+        applyJobs(snap.docs.map(d=>({id:d.id,...d.data()})));
+      }).catch(e2=>console.warn('SDK fallback also failed:',e2));
+    }
   });
+  // Poll every 30s for live updates
+  setInterval(()=>{
+    fsGetAllJobs().then(applyJobs).catch(e=>console.warn('Poll failed:',e));
+  },30000);
 }
 
 // ─── Job type detection ───────────────────────────
@@ -1121,7 +1164,7 @@ function updateStatus(jobId, newStatus){
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   j.status=newStatus;
   lsSave();
-  if(firestoreOK){ updateDoc(doc(db,'jobs',jobId),{status:newStatus}).catch(e=>console.warn(e)); }
+  fsSaveJob(j).catch(e=>console.warn('updateStatus save:',e));
   if(currentTab==='pilotdone') renderPilotDone();
   if(currentTab==='priced') renderPriced();
   if(currentTab==='invoiced') renderInvoiced();
@@ -2088,13 +2131,14 @@ async function saveStaff(){
     },
   };
   localStorage.setItem('at_staff',JSON.stringify(s));
-  if(firestoreOK){
-    try{ await setDoc(doc(db,'config','settings'),s); }
-    catch(e){ console.warn('Settings Firestore sync failed:',e); alert('⚠️ Saved locally but Firestore sync failed: '+e.message); return; }
-  }
+  try{
+    const body={fields:Object.fromEntries(Object.entries(s).filter(([,v])=>v!==undefined&&v!==null).map(([k,v])=>[k,fsVal(v)]))};
+    const r=await fetch(FS_BASE+'/config/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+  }catch(e){ console.warn('Settings sync failed:',e); alert('⚠️ Saved locally but cloud sync failed: '+e.message); return; }
   closeStaffModal();
   renderJobs();
-  alert('✅ Settings saved'+(firestoreOK?' and synced to all devices':'')+'!');
+  alert('✅ Settings saved and synced to all devices!');
 }
 
 // ═══════════════════════════════════════════════════
@@ -3102,26 +3146,20 @@ function setBase(b){
 }
 function baseFilter(j){ return !currentBase || j.base===currentBase; }
 function loadSettings(){
-  if(!firestoreOK) return;
-  try{
-    onSnapshot(doc(db,'config','settings'),(snap)=>{
-      if(!snap.exists()) return;
-      const remote=snap.data();
-      // Remote (Firestore) always wins — overwrite local entirely
-      localStorage.setItem('at_staff',JSON.stringify(remote));
-      // Refresh live AIRSTRIP_RATES
-      if(remote.stripObjs){
-        Object.keys(AIRSTRIP_RATES).forEach(k=>delete AIRSTRIP_RATES[k]);
-        remote.stripObjs.forEach(s=>{if(s.name&&s.rate!=null)AIRSTRIP_RATES[s.name]=parseFloat(s.rate);});
-      }
-      // Sync Xero Client ID to all devices automatically
-      if(remote.xeroClientId && !localStorage.getItem('at_xeroClientId')){
-        localStorage.setItem('at_xeroClientId', remote.xeroClientId);
-      }
-      // Re-render to pick up new pilots/aircraft lists
-      renderJobs();
-    });
-  }catch(e){console.warn('loadSettings:',e);}
+  // Use REST API directly for reliability
+  fetch(FS_BASE+'/config/settings').then(r=>r.ok?r.json():null).then(d=>{
+    if(!d||!d.fields) return;
+    const remote=Object.fromEntries(Object.entries(d.fields).map(([k,v])=>[k,fsFromVal(v)]));
+    localStorage.setItem('at_staff',JSON.stringify(remote));
+    if(remote.stripObjs){
+      Object.keys(AIRSTRIP_RATES).forEach(k=>delete AIRSTRIP_RATES[k]);
+      remote.stripObjs.forEach(s=>{if(s.name&&s.rate!=null)AIRSTRIP_RATES[s.name]=parseFloat(s.rate);});
+    }
+    if(remote.xeroClientId && !localStorage.getItem('at_xeroClientId')){
+      localStorage.setItem('at_xeroClientId', remote.xeroClientId);
+    }
+    renderJobs();
+  }).catch(e=>console.warn('loadSettings REST:',e));
 }
 
 // Tab button event delegation (module scope fix)
