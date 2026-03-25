@@ -1233,8 +1233,8 @@ function renderStatusTab({statusFilter, listId, countId, searchId, stripId, empt
     return `<div class="job-card" onclick="openJob('${j.id}')" style="cursor:pointer;border-left:4px solid ${badgeColor}">
       <div class="job-header">
         <div>
-          <span class="job-client">${j.client||'—'}</span>
-          <span class="job-sub">${j.address||''} · ${j.airstrip||''}</span>
+          <span class="job-client">${j.clientName||j.client||'—'}</span>
+          <span class="job-sub">${j.farmAddress||j.address||'—'} · ${j.airstrip||''}</span>
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
           <span class="badge" style="background:${badgeColor}">${badgeLabel}</span>
