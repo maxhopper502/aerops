@@ -812,7 +812,7 @@ function openJob(id){
         <div style="display:flex;align-items:center;gap:10px">
           <div id="ac-total-display" style="flex:1;font-size:1.3rem;font-weight:800;color:var(--navy)">${fmtMoney(totalInv)}</div>
           <button onclick="saveActualCost('${j.id}')" class="btn btn-green btn-sm">💾 Save</button>
-          <button onclick="printInvoice('${j.id}')" class="btn btn-navy btn-sm">🖨️ Print</button><button onclick="xeroPushInvoice('${j.id}')" class="btn btn-sm" style="background:#13b5ea;color:#fff">🔗 Xero</button>
+          <button onclick="printInvoice('${j.id}')" class="btn btn-navy btn-sm">🖨️ Print</button>
         </div>
       </div>
 
