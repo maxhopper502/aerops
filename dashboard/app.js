@@ -2687,202 +2687,132 @@ function recalcActualBox(jobId){
 function printInvoice(jobId){
   var j=jobs.find(function(j){return j.id===jobId;}); if(!j) return;
   var est=estimateJob(j), comp=j.completion||{};
-  var rate=j.hourlyRate||3300;
-  var hours=j.actualHours||0;
-  var chem=j.chemCost||0;
-  var other1b=j.other1||0; var other2b=j.other2||0;
-  var allOther=chem+other1b+other2b;
   var ha=est.totalHa||0;
-  var flightCharge=(j.billingMode==='ha')?Math.round((j.ratePerHa||0)*ha):Math.round((j.hourlyRate||3300)*(j.actualHours||0));
-  var totalCharges=j.actualCost||(flightCharge+allOther);
-  var gst=Math.round(totalCharges*0.1);
-  var invTotal=totalCharges+gst;
-  var date=comp.date||j.preferredDate||'';
-  var dateStr=date?new Date(date+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}):'--';
-  var now=new Date();
-  var yy=String(now.getFullYear()).slice(-2);
-  var mm=String(now.getMonth()+1).padStart(2,'0');
-  var dd=String(now.getDate()).padStart(2,'0');
-  var rnd=Math.random().toString(36).slice(2,6).toUpperCase();
-  var invNo='ATA-'+yy+mm+dd+'-'+rnd;
+  var bmode=j.billingMode||'hr';
+  var rate=j.hourlyRate||3300;
+  var hours=parseFloat(j.actualHours)||0;
+  if(!hours){var t=0;(comp.tachoSessions||[]).forEach(function(s){if(s.stopTacho>s.startTacho)t+=parseFloat(s.stopTacho)-parseFloat(s.startTacho);});if(t===0&&comp.vdoStart&&comp.vdoStop)t=parseFloat(comp.vdoStop)-parseFloat(comp.vdoStart);hours=t;}
+  var rateHa=parseFloat(j.ratePerHa)||0;
+  var flightCharge=bmode==='ha'?Math.round(rateHa*ha):Math.round(rate*hours);
+  var airstrip=parseFloat(j.chemCost)||0, airstripDesc=j.chemDesc||'Airstrip / Loading Area Maintenance';
+  var other1=parseFloat(j.other1)||0, other1Desc=j.other1Desc||'Other Charges';
+  var other2=parseFloat(j.other2)||0, other2Desc=j.other2Desc||'Other Charges';
+  var totalCharges=parseFloat(j.billingTotal||j.actualCost)||(flightCharge+airstrip+other1+other2);
+  var gst=Math.round(totalCharges*0.1*100)/100;
+  var invTotal=Math.round((totalCharges+gst)*100)/100;
+  var dollarPerHa=ha>0?totalCharges/ha:0;
   var fmtA=function(v){return new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD',minimumFractionDigits:2}).format(v);};
   var fmtN=function(v){return new Intl.NumberFormat('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);};
+  var now=new Date();
+  var invNo=j.invoiceNumber||('ATA-'+String(now.getFullYear()).slice(-2)+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase());
+  var invDate=now.toLocaleDateString('en-AU',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var workDate=(comp.date||j.preferredDate||'');
+  var workDateStr=workDate?new Date(workDate+'T00:00:00').toLocaleDateString('en-AU',{day:'2-digit',month:'2-digit',year:'numeric'}):'--';
+  var clientName=(j.invoiceTo||j.clientName||'--').toUpperCase();
   var pads=(j.paddocks||[]).filter(function(p){return p.name||p.ha;});
-  var seenCrops={};
-  var crops=pads.map(function(p){return p.cropType;}).filter(function(v){if(v&&!seenCrops[v]){seenCrops[v]=1;return true;}return false;}).join(', ')||'--';
+  var crops=[...new Set(pads.map(function(p){return p.cropType;}).filter(Boolean))].join(', ')||'--';
+  var appTypeStr=(j.appSubType||j.appType||'Aerial Application').toUpperCase();
   var pilot=comp.pilot||(j.schedule&&j.schedule.pilot)||'--';
   var aircraft=comp.aircraft||(j.schedule&&j.schedule.aircraft)||'--';
-  var clientName=j.invoiceTo||j.clientName||'--';
 
-  // Paddock rows for the service table (one row per paddock)
-  var padRows='';
-  if(pads.length){
-    pads.forEach(function(p){
-      var desc=(j.applicationType||'Spray').toUpperCase()+' - '+(p.name||'Paddock')+(p.cropType?' ('+p.cropType+')':'');
-      padRows+='<tr><td>'+desc+'</td>'
-        +'<td align="center">'+(p.ha||0)+' HA</td>'
-        +'<td align="right">-</td>'
-        +'<td align="right">-</td></tr>';
-    });
-  } else if(ha>0){
-    padRows='<tr><td>'+((j.applicationType||'Spray').toUpperCase())+' - '+(j.farmAddress||'--')+'</td>'
-      +'<td align="center">'+ha.toFixed(2)+' HA</td>'
-      +'<td align="right">-</td><td align="right">-</td></tr>';
-  }
-  // Product rows
-  var prodRows='';
+  var padRowsHtml='';
+  pads.forEach(function(p){padRowsHtml+='<tr><td>'+(p.name||'--')+'</td><td style="text-align:center">'+fmtN(p.ha||0)+'</td><td>'+(p.cropType||'--')+'</td></tr>';});
+  if(!padRowsHtml) padRowsHtml='<tr><td colspan="3" style="color:#888">No paddock details recorded</td></tr>';
+
+  var prodRowsHtml='';
   (j.products||[]).filter(function(p){return p.name;}).forEach(function(p){
-    var qty=((parseFloat(p.rate)||0)*ha).toFixed(1);
-    var u=p.unit||'L';
-    prodRows+='<tr style="background:#f8fafc"><td style="padding-left:18px;color:#555">'+p.name+' (Client Supplied)</td>'
-      +'<td align="center">'+ha.toFixed(2)+' HA</td>'
-      +'<td align="right">'+(p.rate||0)+' '+u+'/ha</td>'
-      +'<td align="right">'+qty+' '+u+'</td></tr>';
+    var qty=p.totalQty||p.totalRequired||fmtN((parseFloat(p.rate)||0)*ha);
+    prodRowsHtml+='<tr><td>SUPPLIED BY CLIENT</td><td>'+p.name.toUpperCase()+'</td><td style="text-align:center">'+(p.rate||0)+'</td><td style="text-align:center">'+(p.unit||'L')+'</td><td style="text-align:right">'+qty+'</td></tr>';
   });
+  if(!prodRowsHtml) prodRowsHtml='<tr><td colspan="5" style="color:#888">No products recorded</td></tr>';
 
-  var bmode=j.billingMode||'hr';
-  var rateHa=j.ratePerHa||0;
-  var airstrip=j.chemCost||0, airstripDesc=j.chemDesc||'Airstrip / Loading Area Maintenance';
-  var other1=j.other1||0, other1Desc=j.other1Desc||'Other Charges';
-  var other2=j.other2||0, other2Desc=j.other2Desc||'Other Charges';
-  var flightCharge2=bmode==='ha'?Math.round(rateHa*ha):Math.round(rate*hours);
-  var chargeRows='';
-  if(bmode==='ha'&&rateHa>0){
-    chargeRows+='<tr><td>AERIAL APPLICATION</td>'
-      +'<td align="center">'+ha.toFixed(2)+' HA</td>'
-      +'<td align="right">$'+fmtN(rateHa)+'/ha</td>'
-      +'<td align="right"><b>'+fmtA(flightCharge2)+'</b></td></tr>';
-  } else if(hours>0){
-    chargeRows+='<tr><td>AERIAL APPLICATION</td>'
-      +'<td align="center">'+ha.toFixed(2)+' HA</td>'
-      +'<td align="right">$'+rate.toLocaleString()+'/hr</td>'
-      +'<td align="right"><b>'+fmtA(flightCharge2)+'</b></td></tr>';
-    chargeRows+='<tr style="background:#f8fafc"><td style="padding-left:18px;color:#555">'+hours.toFixed(2)+' hrs @ $'+rate.toLocaleString()+'/hr</td><td></td><td></td><td></td></tr>';
+  var chargeRowsHtml='';
+  if(ha>0&&dollarPerHa>0){
+    chargeRowsHtml+='<tr><td>AREA TREATED: '+fmtN(ha)+' HA @ '+fmtA(dollarPerHa)+' PER HA</td><td style="text-align:right"><b>'+fmtA(flightCharge)+'</b></td></tr>';
   } else {
-    chargeRows+='<tr><td>AERIAL APPLICATION</td>'
-      +'<td align="center">'+ha.toFixed(2)+' HA</td>'
-      +'<td align="right">-</td>'
-      +'<td align="right"><b>'+fmtA(flightCharge2)+'</b></td></tr>';
+    chargeRowsHtml+='<tr><td>AERIAL APPLICATION</td><td style="text-align:right"><b>'+fmtA(flightCharge)+'</b></td></tr>';
   }
-  var airRateDisplay=(j.airstrip&&AIRSTRIP_RATES&&AIRSTRIP_RATES[j.airstrip])?'$'+AIRSTRIP_RATES[j.airstrip]+'/ha':'-';
-  if(airstrip>0) chargeRows+='<tr><td>'+airstripDesc+'</td><td align="center">'+ha.toFixed(2)+' HA</td><td align="right">'+airRateDisplay+'</td><td align="right"><b>'+fmtA(airstrip)+'</b></td></tr>';
-  if(other1>0) chargeRows+='<tr><td>'+other1Desc+'</td><td align="center">'+ha.toFixed(2)+' HA</td><td align="right">-</td><td align="right"><b>'+fmtA(other1)+'</b></td></tr>';
-  if(other2>0) chargeRows+='<tr><td>'+other2Desc+'</td><td align="center">'+ha.toFixed(2)+' HA</td><td align="right">-</td><td align="right"><b>'+fmtA(other2)+'</b></td></tr>';
+  if(airstrip>0){var arp=j.airstrip&&AIRSTRIP_RATES&&AIRSTRIP_RATES[j.airstrip]?AIRSTRIP_RATES[j.airstrip]:null;chargeRowsHtml+='<tr><td>'+airstripDesc+(arp?' -- $'+arp+' PER HA':'')+'</td><td style="text-align:right"><b>'+fmtA(airstrip)+'</b></td></tr>';}
+  if(other1>0) chargeRowsHtml+='<tr><td>'+other1Desc.toUpperCase()+'</td><td style="text-align:right"><b>'+fmtA(other1)+'</b></td></tr>';
+  if(other2>0) chargeRowsHtml+='<tr><td>'+other2Desc.toUpperCase()+'</td><td style="text-align:right"><b>'+fmtA(other2)+'</b></td></tr>';
 
-  var win=window.open('','_blank','width=850,height=1100');
+  var win=window.open('','_blank','width=860,height=1150');
   if(!win){alert('Allow popups to print invoice');return;}
 
-  var css=''
-    +'*{margin:0;padding:0;box-sizing:border-box}'
+  var css='*{margin:0;padding:0;box-sizing:border-box}'
     +'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#222;background:#fff}'
-    +'.page{padding:14mm 16mm 10mm}'
-    +'/* ── Header ── */'
+    +'.page{padding:12mm 15mm 10mm}'
+    +'@media print{@page{margin:10mm}}'
     +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px}'
-    +'.co-name{font-size:15pt;font-weight:900;color:#1a3a5c;letter-spacing:-.3px}'
-    +'.co-sub{font-size:8pt;color:#666;margin-top:3px;line-height:1.5}'
-    +'.inv-badge{text-align:right}'
-    +'.inv-badge .title{font-size:20pt;font-weight:900;color:#1a3a5c;letter-spacing:1px}'
-    +'.inv-badge .meta{font-size:8.5pt;color:#444;margin-top:4px;line-height:1.7}'
-    +'/* ── Info grid ── */'
-    +'.info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}'
-    +'.info-box{border:1px solid #ddd;border-radius:4px;padding:8px 10px}'
-    +'.info-box .lbl{font-size:6.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}'
-    +'.info-box .val{font-size:9pt;line-height:1.6;color:#222}'
-    +'.info-box .name{font-size:10.5pt;font-weight:700;color:#1a3a5c}'
-    +'/* ── Tables ── */'
-    +'table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:10px}'
-    +'thead tr{background:#1a3a5c}'
-    +'thead th{color:#fff;padding:5px 7px;font-size:7pt;text-transform:uppercase;letter-spacing:.4px;font-weight:700}'
-    +'tbody td{padding:5px 7px;border-bottom:1px solid #eee;vertical-align:top}'
-    +'tbody tr:last-child td{border-bottom:none}'
-    +'.sec-hdr{font-size:7pt;font-weight:700;color:#1a3a5c;text-transform:uppercase;letter-spacing:.6px;border-bottom:1.5px solid #1a3a5c;padding:4px 0 3px;margin-bottom:4px}'
-    +'/* ── Totals ── */'
-    +'.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:14px}'
-    +'.totals{border:1px solid #ddd;border-radius:4px;min-width:240px}'
-    +'.tot-row{display:flex;justify-content:space-between;padding:5px 10px;font-size:9pt;border-bottom:1px solid #eee}'
-    +'.tot-row:last-child{border-bottom:none}'
-    +'.tot-row.grand{background:#1a3a5c;color:#fff;font-weight:900;font-size:12pt;border-radius:0 0 4px 4px}'
-    +'/* ── Footer ── */'
-    +'.ftr{border-top:2px solid #1a3a5c;margin-top:12px;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:8pt;color:#555}'
-    +'.ftr h4{font-weight:700;color:#1a3a5c;font-size:8.5pt;margin-bottom:5px}'
-    +'.ftr .warning{color:#c00;font-weight:700;margin-top:6px;font-size:8.5pt}'
-    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{padding:0}@page{margin:12mm;size:A4}}';
+    +'.co-name{font-size:13pt;font-weight:900;color:#1a3a5c}.co-tagline{font-size:7pt;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}'
+    +'.co-addr{font-size:8pt;color:#555;margin-top:6px;line-height:1.6}'
+    +'.inv-right{text-align:right}.inv-title{font-size:16pt;font-weight:900;color:#1a3a5c;letter-spacing:1px;text-decoration:underline}'
+    +'.inv-no{font-size:8.5pt;color:#444;margin-top:4px;line-height:1.8}'
+    +'.billto{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}'
+    +'.bbox{border:1px solid #ccc;border-radius:4px;padding:8px 10px}'
+    +'.bbox .lbl{font-size:6.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}'
+    +'.bbox .nm{font-size:10pt;font-weight:700;color:#1a3a5c}.bbox .val{font-size:8.5pt;line-height:1.6;color:#333}'
+    +'.sec{margin-bottom:10px}'
+    +'.sec-hdr{font-size:7pt;font-weight:700;color:#fff;background:#1a3a5c;text-transform:uppercase;letter-spacing:.6px;padding:4px 8px}'
+    +'table{width:100%;border-collapse:collapse;font-size:8.5pt}'
+    +'table th{background:#1a3a5c;color:#fff;padding:5px 7px;font-size:7pt;text-transform:uppercase;letter-spacing:.4px;font-weight:700;text-align:left}'
+    +'table td{padding:5px 7px;border-bottom:1px solid #eee;vertical-align:top}'
+    +'table tr:last-child td{border-bottom:none}'
+    +'table tr:nth-child(even) td{background:#f8fafc}'
+    +'.tw{display:flex;justify-content:flex-end;margin-bottom:12px}'
+    +'.tt{width:280px;border:1.5px solid #1a3a5c;border-radius:4px;overflow:hidden;border-collapse:collapse}'
+    +'.tt td{padding:6px 10px;border-bottom:1px solid #ddd;font-size:9pt}'
+    +'.tt td:last-child{text-align:right}'
+    +'.tt .tr-total td{font-size:11pt;font-weight:900;color:#1a3a5c;background:#eef3f8;border-bottom:none}'
+    +'.tt .tr-gst td{color:#555}'
+    +'.tt .tr-rpha td{color:#1a3a5c;font-weight:700;font-size:9.5pt;border-top:1px solid #1a3a5c}'
+    +'.slip{border-top:2px dashed #aaa;margin-top:20px;padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:20px}'
+    +'.sl-left{font-size:8pt;line-height:1.8;color:#444}'
+    +'.sl-right{border:1.5px solid #1a3a5c;border-radius:4px;padding:10px;font-size:8.5pt}'
+    +'.sl-right .sr-title{font-size:6.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}'
+    +'.sl-right table{font-size:8.5pt}.sl-right td{padding:3px 6px;border:none}'
+    +'.sl-right .inv-total-row td{font-weight:700;font-size:10pt;color:#1a3a5c;border-top:1.5px solid #1a3a5c;padding-top:5px}';
 
-  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tax Invoice '+invNo+'</title><style>'+css+'</style></head><body><div class="page">'
-    // ── Header ──
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Tax Invoice '+invNo+'</title><style>'+css+'</style></head><body><div class="page">'
     +'<div class="hdr">'
-    +'<div><div class="co-name">AEROTECH AUSTRALASIA PTY LTD</div>'
-    +'<div class="co-sub">7 Dakota Drive, Parafield Airport SA 5106<br>ABN: 72 056 435 208 &nbsp;|&nbsp; receivables@aerotech.net.au</div></div>'
-    +'<div class="inv-badge"><div class="title">TAX INVOICE</div>'
-    +'<div class="meta">'
-    +'Invoice No: <b>'+invNo+'</b><br>'
-    +'Invoice Date: <b>'+dateStr+'</b><br>'
-    +(j.clientRef?'Your Order No: <b>'+j.clientRef+'</b><br>':'')
-    +'Work Order: <b>'+(j.id||'').slice(-8)+'</b>'
-    +'</div></div></div>'
-    // ── Info Grid ──
-    +'<div class="info">'
-    +'<div class="info-box"><div class="lbl">Bill To</div>'
-    +'<div class="name">'+clientName+'</div>'
-    +(j.farmAddress?'<div class="val" style="margin-top:3px">'+j.farmAddress+'</div>':'')
-    +(j.clientPhone?'<div class="val">'+j.clientPhone+'</div>':'')
+    +'<div><div class="co-name">AEROTECH AUSTRALASIA PTY LTD</div><div class="co-tagline">Quicker &middot; Safer &middot; Easier</div><div class="co-addr">7 Dakota Drive, Parafield Airport SA 5106<br>ABN: 72 056 435 208</div></div>'
+    +'<div class="inv-right"><div class="inv-title">Tax Invoice No: '+invNo+'</div><div class="inv-no">Invoice Date: '+invDate+'<br>Work Date: '+workDateStr+'<br>Pilot: '+pilot+' &nbsp;|&nbsp; Aircraft: '+aircraft+'</div></div>'
     +'</div>'
-    +'<div class="info-box"><div class="lbl">Job Details</div>'
-    +'<div class="val">'
-    +'<b>Farm:</b> '+(j.farmAddress||'--')+'<br>'
-    +'<b>Airstrip:</b> '+(j.airstrip||'--')+'<br>'
-    +'<b>Crop:</b> '+crops+'<br>'
-    +'<b>Date:</b> '+dateStr+'<br>'
-    +'<b>Pilot:</b> '+pilot+' &nbsp;|&nbsp; <b>Aircraft:</b> '+aircraft+'<br>'
-    +'<b>Type:</b> '+((j.applicationType||'Spray').toUpperCase())+' &nbsp;|&nbsp; <b>Area:</b> '+ha.toFixed(2)+' ha'
-    +'</div></div>'
+    +'<div class="billto">'
+    +'<div class="bbox"><div class="lbl">Bill To</div><div class="nm">'+clientName+'</div>'+(j.subEmail?'<div class="val">'+j.subEmail+'</div>':'')+'</div>'
+    +'<div class="bbox"><div class="lbl">Job Reference</div><div class="val">Customer: <b>'+clientName+'</b><br>Farm: <b>'+(j.farmAddress||'--').toUpperCase()+'</b><br>Airstrip: '+(j.airstrip||'--')+'<br>Work Type: <b>'+appTypeStr+'</b></div></div>'
     +'</div>'
-    // ── Fields & Products table ──
-    +(pads.length?'<div class="sec-hdr">Fields &amp; Products Applied</div>'
-      +'<table><thead><tr>'
-      +'<th style="width:52%">Description</th>'
-      +'<th style="width:16%;text-align:center">Area</th>'
-      +'<th style="width:16%;text-align:right">Rate</th>'
-      +'<th style="width:16%;text-align:right">Quantity</th>'
-      +'</tr></thead><tbody>'+padRows+prodRows+'</tbody></table>':'')
-    // ── Charges table ──
-    +'<div class="sec-hdr">Charge Details</div>'
-    +'<table><thead><tr>'
-    +'<th style="width:52%">Charge Description</th>'
-    +'<th style="width:16%;text-align:center">Area</th>'
-    +'<th style="width:16%;text-align:right">Rate</th>'
-    +'<th style="width:16%;text-align:right">Amount</th>'
-    +'</tr></thead><tbody>'+chargeRows+'</tbody></table>'
-    // ── Totals ──
-    +'<div class="totals-wrap"><div class="totals">'
-    +'<div class="tot-row"><span>Total Charges</span><span>'+fmtA(totalCharges)+'</span></div>'
-    +'<div class="tot-row"><span>GST (10%)</span><span>'+fmtA(gst)+'</span></div>'
-    +'<div class="tot-row grand"><span>INVOICE TOTAL</span><span>'+fmtA(invTotal)+'</span></div>'
-    +'</div></div>'
-    // ── Footer ──
-    +'<div class="ftr">'
-    +'<div><h4>Payment Details</h4>'
-    +'<p>BSB: <b>105 170</b></p>'
-    +'<p>Account No: <b>764431740</b></p>'
-    +'<p>Email: receivables@aerotech.net.au</p>'
-    +'<p class="warning">PLEASE PAY ON INVOICE WITHIN 14 DAYS</p>'
-    +'<p style="margin-top:4px">Please quote invoice number with payment.</p>'
-    +'<p>No statement will be issued.</p>'
+    +'<div class="sec"><div class="sec-hdr">Work Completed</div>'
+    +'<table><thead><tr><th>Paddock Name</th><th style="text-align:center">Area (Ha)</th><th>Crop Type</th></tr></thead><tbody>'+padRowsHtml
+    +'<tr style="background:#eef3f8!important"><td><b>TOTAL AREA TREATED</b></td><td style="text-align:center;font-weight:900;color:#1a3a5c">'+fmtN(ha)+' HA</td><td style="color:#777">'+crops+'</td></tr>'
+    +'</tbody></table></div>'
+    +'<div class="sec"><div class="sec-hdr">Products Used &mdash; Water Rate: '+(j.waterRate||'--')+' L/ha</div>'
+    +'<table><thead><tr><th>Supplier</th><th>Product</th><th style="text-align:center">App Rate/Ha</th><th style="text-align:center">UOM</th><th style="text-align:right">Total Qty</th></tr></thead><tbody>'+prodRowsHtml+'</tbody></table></div>'
+    +'<div class="sec"><div class="sec-hdr">Charge Information</div>'
+    +'<table><thead><tr><th>Charge Details</th><th style="text-align:right">Charge Amount</th></tr></thead><tbody>'+chargeRowsHtml+'</tbody></table></div>'
+    +'<div class="tw"><table class="tt"><tbody>'
+    +'<tr><td>Total Charges</td><td>'+fmtA(totalCharges)+'</td></tr>'
+    +'<tr class="tr-gst"><td>GST (10%)</td><td>'+fmtA(gst)+'</td></tr>'
+    +'<tr class="tr-total"><td>Invoice Total</td><td>'+fmtA(invTotal)+'</td></tr>'
+    +'<tr class="tr-rpha"><td>Rate per Hectare</td><td>'+fmtA(dollarPerHa)+'/ha</td></tr>'
+    +'</tbody></table></div>'
+    +(j.additionalComments?'<div class="sec"><div class="sec-hdr">Additional Comments</div><div style="padding:8px;font-size:9pt">'+j.additionalComments+'</div></div>':'')
+    +'<div class="slip">'
+    +'<div class="sl-left"><b>PLEASE PAY ON INVOICE WITHIN 14 DAYS</b><br>PLEASE QUOTE INVOICE NUMBER WITH PAYMENT<br>NO STATEMENT ISSUED<br><br><b>AEROTECH AUSTRALASIA PTY LTD</b><br>BSB: 105 170 &nbsp; Account No: 764 431 740<br>Email: receivables@aerotech.net.au<br><br><span style="font-size:7.5pt;color:#888">Please note, late fees may apply (6% + official cash rate)</span></div>'
+    +'<div class="sl-right"><div class="sr-title">Remittance Summary</div><table><tbody>'
+    +'<tr><td>Customer:</td><td><b>'+clientName+'</b></td></tr>'
+    +'<tr><td>Invoice No:</td><td>'+invNo+'</td></tr>'
+    +'<tr><td>Total Charges:</td><td>'+fmtA(totalCharges)+'</td></tr>'
+    +'<tr><td>GST:</td><td>'+fmtA(gst)+'</td></tr>'
+    +'<tr class="inv-total-row"><td>Invoice Total:</td><td>'+fmtA(invTotal)+'</td></tr>'
+    +'</tbody></table></div>'
     +'</div>'
-    +'<div><h4>AEROTECH AUSTRALASIA PTY LTD</h4>'
-    +'<p>7 Dakota Drive</p><p>Parafield Airport SA 5106</p>'
-    +'<p style="margin-top:4px">ABN: 72 056 435 208</p>'
-    +'<div style="margin-top:14px;padding:8px 12px;background:#f0f4f8;border-radius:4px;border-left:3px solid #1a3a5c">'
-    +'<div style="font-size:7.5pt;color:#888;margin-bottom:2px">INVOICE TOTAL (INC. GST)</div>'
-    +'<div style="font-size:16pt;font-weight:900;color:#1a3a5c">'+fmtA(invTotal)+'</div>'
-    +'</div></div></div>'
-    +'</div>'
-    +'<sc'+'ript>setTimeout(function(){window.print();},600);</s'+'cript>'
-    +'</body></html>';
+    +'</div><sc'+'ript>setTimeout(function(){window.print();},600);</s'+'cript></body></html>';
 
   win.document.write(html);
   win.document.close();
 }
+
 async function saveActualCost(jobId){
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   const mode=(document.getElementById('ac-ha-fields')?.style.display==='grid')?'ha':'hr';
