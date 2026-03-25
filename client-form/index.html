@@ -113,10 +113,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-logo">✈️</div>
+    <img src="./icon-512.png" style="width:32px;height:32px;border-radius:8px;object-fit:cover"/>
     <div>
       <div class="hdr-title">Aerotech Aerial Application</div>
-      <div class="hdr-sub">Job Request Form</div>
+      <div class="hdr-sub">Powered by AeroOps · Job Request Form</div>
     </div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="prog" style="width:20%"></div></div>
@@ -387,10 +387,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg">
       <label>Map provided?</label>
       <div class="yn-row">
-        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes</button>
-        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No — will email</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes — upload below</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No — I'll send later</button>
       </div>
-      <div class="info-note" style="margin-top:10px">📧 Please email maps to <strong>admin@aerotechaviation.com.au</strong> with your name and preferred date.</div>
+      <!-- File upload area — shown always so client can attach regardless of yes/no -->
+      <div style="margin-top:12px">
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">ATTACH MAP / RECOMMENDATION (PDF, JPG, PNG — max 10MB)</label>
+        <div id="map-drop-zone" style="border:2.5px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-top:6px" onclick="document.getElementById('map-file-input').click()">
+          <div style="font-size:2rem;margin-bottom:6px">📎</div>
+          <div style="font-size:.83rem;font-weight:700;color:var(--navy)">Tap to attach file</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px">PDF, JPG, PNG, KMZ accepted</div>
+        </div>
+        <input type="file" id="map-file-input" accept=".pdf,.jpg,.jpeg,.png,.kmz,.kml" style="display:none" onchange="handleMapFile(this)"/>
+        <div id="map-file-status" style="margin-top:8px;font-size:.8rem;display:none"></div>
+      </div>
     </div>
     <div class="fg">
       <label>Additional Comments</label>
@@ -444,7 +454,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="ref-label">Reference Number</div>
       <div class="ref-val" id="ref-num">—</div>
     </div>
-    <p style="margin-top:20px;font-size:.8rem">📧 A copy has been noted. Please email any maps or recommendations to <strong>admin@aerotechaviation.com.au</strong></p>
+    <p id="done-email-note" style="margin-top:16px;font-size:.82rem;color:#065f46;font-weight:600">📧 A confirmation email has been sent to you with all the job details.</p>
+    <div style="background:#f0fdf4;border-radius:10px;padding:14px;margin-top:16px;font-size:.78rem;color:#374151;text-align:left">
+      <strong>What happens next?</strong><br/>
+      Our operations team will review your request and contact you within 1 business day to confirm scheduling, weather windows, and any additional requirements.
+    </div>
     <button class="btn btn-next" style="margin-top:24px;width:100%" onclick="location.reload()">Submit Another Request</button>
   </div>
 </div>
@@ -459,23 +473,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ── Firebase / Firestore REST ── */
 const FSBASE = 'https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents';
 const FSKEY  = 'AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI';
+const FS_STORAGE = 'https://firebasestorage.googleapis.com/v0/b/aerotech-ops.firebasestorage.app/o';
+
 /* ── EmailJS config ──
    1. Sign up free at https://emailjs.com
-   2. Add your Gmail/Outlook email service → copy Service ID
-   3. Create two templates (client confirmation + office alert) → copy Template IDs
+   2. Add your Gmail service → copy Service ID
+   3. Create template for client confirmation → copy Template ID
    4. Account → API Keys → copy Public Key
-   Then paste the values below. ── */
-const EJS_PUB_KEY  = '';          // Your EmailJS Public Key
-const EJS_SVC_ID   = '';          // Email service ID  e.g. 'service_abc123'
+   Then paste the 4 values below. ── */
+const EJS_PUB_KEY  = '';          // e.g. 'user_xxxxxxxxxxx'
+const EJS_SVC_ID   = '';          // e.g. 'service_abc123'
 const EJS_CLIENT_T = '';          // Client confirmation template ID
-const EJS_OFFICE_T = '';          // Office notification template ID
+const EJS_OFFICE_T = '';          // Office alert template ID (optional)
 const EJS_OFFICE_EMAIL = 'admin@aerotechaviation.com.au';
 if(EJS_PUB_KEY) emailjs.init({publicKey: EJS_PUB_KEY});
+
+/* ── Map file upload state ── */
+let mapFileUrl = null;
+let mapFileName = null;
 
 
 /* ── State ── */
 let curStep = 1;
 const TOTAL = 5;
+
+/* ── Map file upload handler ── */
+async function handleMapFile(input){
+  const file = input.files[0]; if(!file) return;
+  if(file.size > 10*1024*1024){ alert('File too large — maximum 10MB'); input.value=''; return; }
+  const statusEl = document.getElementById('map-file-status');
+  const dropZone = document.getElementById('map-drop-zone');
+  statusEl.style.display='block';
+  statusEl.innerHTML='<span style="color:#92400e">⏳ Uploading '+file.name+'…</span>';
+  dropZone.style.borderColor='#e67e22';
+  try{
+    const safeName = Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const uploadPath = encodeURIComponent('maps/'+safeName);
+    const r = await fetch(FS_STORAGE+'?uploadType=media&name='+uploadPath,{
+      method:'POST', headers:{'Content-Type':file.type||'application/octet-stream'}, body:file
+    });
+    if(!r.ok) throw new Error('Upload failed: HTTP '+r.status);
+    const json = await r.json();
+    mapFileUrl = 'https://firebasestorage.googleapis.com/v0/b/aerotech-ops.firebasestorage.app/o/'+encodeURIComponent('maps/'+safeName)+'?alt=media';
+    mapFileName = file.name;
+    statusEl.innerHTML='<span style="color:#16a34a">✅ '+file.name+' attached</span>';
+    dropZone.style.borderColor='#16a34a';
+    dropZone.innerHTML='<div style="font-size:1.5rem">📎</div><div style="font-size:.83rem;font-weight:700;color:#16a34a">'+file.name+'</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px">Tap to replace</div>';
+  }catch(e){
+    console.warn('Map upload error:',e);
+    statusEl.innerHTML='<span style="color:#dc2626">⚠️ Upload failed — map will need to be emailed. ('+e.message+')</span>';
+    dropZone.style.borderColor='#dc2626';
+    mapFileUrl = null;
+  }
+}
 const hazVals = {};
 const ynVals  = {};
 
@@ -846,6 +896,8 @@ async function submitForm(){
       anyHazards:        hazVals.anyHazards||'',
       hazardsDesc:       ($('hazardsDesc')||{}).value||'',
       mapProvided:       hazVals.mapProvided||'',
+      mapFileUrl:        mapFileUrl||'',
+      mapFileName:       mapFileName||'',
     },
     notes:         ($('notes')||{}).value||'',
     notifyEmail1:  ($('notifyEmail1')||{}).value||'',
@@ -911,10 +963,11 @@ async function submitForm(){
       const ejsBase = {ref_number:ref, client_name:data.clientName, contact_name:data.contactName,
         preferred_date:data.preferredDate, app_type:data.appType, farm_address:data.farmAddress,
         total_ha:totalHa.toFixed(1), paddock_list:paddocks.map(p=>p.name+': '+p.ha+' ha').join(', '),
-        product_list:products.map(p=>p.name+' '+p.rate+' '+p.unit).join(', '), summary_text:summary};
+        product_list:products.map(p=>p.name+' '+p.rate+' '+p.unit).join(', '), summary_text:summary,
+        map_url:mapFileUrl||'', map_filename:mapFileName||'No map attached'};
       // Client confirmation
       if(data.contactEmail) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:data.contactEmail}).catch(()=>{});
-      // Extra notify
+      // Extra notify recipients
       allNotify.slice(1).forEach(e=>{ if(e) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:e}).catch(()=>{}); });
       // Office alert
       if(EJS_OFFICE_T) emailjs.send(EJS_SVC_ID, EJS_OFFICE_T, {...ejsBase, to_email:EJS_OFFICE_EMAIL}).catch(()=>{});
