@@ -240,6 +240,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="spray-subtype-btns">
         <button class="subtype-btn" onclick="setSubtype('General Spraying',this)" style="padding:11px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;color:var(--muted)">💧 General Spraying</button>
         <button class="subtype-btn" onclick="setSubtype('Herbicide',this)" style="padding:11px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;color:var(--muted)">🌿 Herbicide</button>
+        <button class="subtype-btn" onclick="setSubtype('Fungicide',this)" style="padding:11px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;color:var(--muted)">🍄 Fungicide</button>
+        <button class="subtype-btn" onclick="setSubtype('Insecticide',this)" style="padding:11px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;color:var(--muted)">🐛 Insecticide</button>
         <button class="subtype-btn" onclick="setSubtype('Misting',this)" style="padding:11px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;color:var(--muted);grid-column:1/-1">💨 Misting</button>
       </div>
       <div class="err-msg" id="e-subtype">Please select a spray type</div>
@@ -259,7 +261,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="two">
       <div class="fg">
         <label>Airstrip / Landing Area</label>
-        <input type="text" id="airstrip" placeholder="e.g. Cummins airstrip"/>
+        <select id="airstrip">
+          <option value="">-- Select nearest airstrip --</option>
+          <option>Cummins</option>
+          <option>Trelour's</option>
+          <option>Smithy's</option>
+          <option>Karkoo</option>
+          <option>Heymans</option>
+          <option>Rob Mac's</option>
+          <option>Fitzy's</option>
+          <option>Modras</option>
+          <option>Other</option>
+        </select>
       </div>
       <div class="fg" id="water-rate-wrap">
         <label>Water Rate (L/ha)</label>
@@ -639,7 +652,7 @@ function calcTotalHa(){
 }
 
 /* ── Product rows ── */
-const PTYPES = ['Herbicide','Fungicide','Insecticide','Trace Element','Adjuvant/Wetter','Fertiliser','Urea','Snail Bait','Mouse Bait','Seed','Other'];
+const PTYPES = ['Herbicide','Fungicide','Insecticide','Misting','Trace Element','Adjuvant/Wetter','Fertiliser','Urea','Snail Bait','Mouse Bait','Seed','Other'];
 const SPREAD_PROD_TYPES = ['Fertiliser','Urea','Snail Bait','Mouse Bait','Seed'];
 
 function addProduct(){
