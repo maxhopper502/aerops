@@ -704,29 +704,16 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
       <div id="cfg-pane-xero" style="display:none">
         <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:14px">
           <div style="font-weight:800;font-size:.85rem;color:#065f46;margin-bottom:8px">🔗 Xero Integration</div>
-          <p style="font-size:.78rem;color:#374151;margin-bottom:12px">Connect to Xero to push invoices directly from AeroOps. You need a free Xero Developer account to get your Client ID.</p>
+          <p style="font-size:.78rem;color:#374151;margin-bottom:12px">Connect to Xero to push invoices directly from AeroOps. One-time setup — only needed at head office.</p>
           <ol style="font-size:.75rem;color:#374151;margin:0 0 12px 16px;line-height:1.8">
             <li>Go to <strong>developer.xero.com</strong> → My Apps → New App</li>
-            <li>App type: <strong>Web app</strong></li>
-            <li>Redirect URI: <strong id="xero-redirect-uri" style="font-family:monospace;font-size:.72rem;background:#fff;padding:2px 6px;border-radius:4px;cursor:pointer" onclick="navigator.clipboard.writeText(this.textContent)">click to load…</strong></li>
-            <li>Copy the <strong>Client ID</strong> from your app and paste below</li>
+            <li>App type: <strong>Mobile or desktop app</strong></li>
+            <li>Redirect URI: <strong style="font-family:monospace;font-size:.72rem;background:#fff;padding:2px 6px;border-radius:4px">https://app.aerops.com.au/</strong></li>
+            <li>Copy the <strong>Client ID</strong> and paste below — no secret needed</li>
           </ol>
-          <div class="fg" style="margin-bottom:10px">
-            <label style="font-size:.72rem;font-weight:700;color:var(--muted)">REDIRECT URI — paste into Xero app → Configuration → Redirect URIs</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="text" id="cfg-xero-redirect-uri-override" placeholder="Will auto-fill below — copy and paste into Xero" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;font-family:monospace" readonly/>
-              <button onclick="navigator.clipboard.writeText(document.getElementById('cfg-xero-redirect-uri-override').value)" class="btn btn-sm btn-ghost" style="white-space:nowrap">📋 Copy</button>
-            </div>
-            <div style="font-size:.68rem;color:#e06b0a;margin-top:3px;font-weight:600">⚠️ Every time the dashboard redeploys, this URL changes. Save the current one in Xero and do not redeploy after.</div>
-          </div>
-          <div class="fg" style="margin-bottom:10px">
+          <div class="fg" style="margin-bottom:12px">
             <label style="font-size:.72rem;font-weight:700;color:var(--muted)">XERO CLIENT ID</label>
             <input type="text" id="cfg-xero-client-id" placeholder="Paste your Xero Client ID here" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;font-family:monospace"/>
-          </div>
-          <div class="fg" style="margin-bottom:10px">
-            <label style="font-size:.72rem;font-weight:700;color:var(--muted)">XERO CLIENT SECRET <span style="font-weight:400;color:#6b7280">(from Configuration page → Client secret 1)</span></label>
-            <input type="password" id="cfg-xero-client-secret" placeholder="Paste your Xero Client Secret here" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;font-family:monospace"/>
-            <div style="font-size:.68rem;color:#6b7280;margin-top:3px">Stored locally on this device only — never sent anywhere except Xero's servers.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button onclick="xeroConnect()" class="btn btn-navy btn-sm">🔗 Connect to Xero</button>
@@ -770,7 +757,7 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<script type="module" src="./app.js?v=10"></script>
+<script type="module" src="./app.js?v=11"></script>
 
 
 

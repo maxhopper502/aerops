@@ -2048,13 +2048,10 @@ function openStaffModal(){
   cfgTab('pilots');
   // Xero settings — load from localStorage
   const _xci=document.getElementById('cfg-xero-client-id'); if(_xci)_xci.value=localStorage.getItem('at_xeroClientId')||getStaff().xeroClientId||'';
-  const _xcs=document.getElementById('cfg-xero-client-secret'); if(_xcs)_xcs.value=localStorage.getItem('at_xeroClientSecret')||'';
   const _xis=document.getElementById('cfg-xero-inv-status'); if(_xis)_xis.value=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
   const _xtr=document.getElementById('cfg-xero-terms'); if(_xtr)_xtr.value=localStorage.getItem('at_xeroTerms')||'14';
   const _xac=document.getElementById('cfg-xero-account'); if(_xac)_xac.value=localStorage.getItem('at_xeroAccount')||'';
   const _xtx=document.getElementById('cfg-xero-tax'); if(_xtx)_xtx.value=localStorage.getItem('at_xeroTax')||'OUTPUT';
-  const _xru=document.getElementById('xero-redirect-uri'); if(_xru)_xru.textContent='https://app.aerops.com.au/';
-  const _xruo=document.getElementById('cfg-xero-redirect-uri-override'); if(_xruo)_xruo.value='https://app.aerops.com.au/';
   const _xst=document.getElementById('xero-status'); if(_xst){const tok=localStorage.getItem('at_xeroToken');_xst.textContent=tok?'✅ Connected to Xero':'⚪ Not connected';_xst.style.color=tok?'#16a34a':'#6b7280';}
   document.getElementById('staff-modal-overlay').classList.add('open');
 }
@@ -2063,7 +2060,6 @@ function closeStaffOnBg(e){ if(e.target===document.getElementById('staff-modal-o
 async function saveStaff(){
   // Save Xero settings to localStorage
   const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci) { if(_sxci.value.trim()) localStorage.setItem('at_xeroClientId',_sxci.value.trim()); else localStorage.removeItem('at_xeroClientId'); }
-  const _sxcs=document.getElementById('cfg-xero-client-secret'); if(_sxcs) { if(_sxcs.value.trim()) localStorage.setItem('at_xeroClientSecret',_sxcs.value.trim()); else localStorage.removeItem('at_xeroClientSecret'); }
   const _sxis=document.getElementById('cfg-xero-inv-status'); if(_sxis)localStorage.setItem('at_xeroInvStatus',_sxis.value);
   const _sxtr=document.getElementById('cfg-xero-terms'); if(_sxtr)localStorage.setItem('at_xeroTerms',_sxtr.value);
   const _sxac=document.getElementById('cfg-xero-account'); if(_sxac)localStorage.setItem('at_xeroAccount',_sxac.value.trim());
@@ -2868,7 +2864,6 @@ async function pkceChallenge(){
 
 async function xeroConnect(){
   const clientId=(document.getElementById('cfg-xero-client-id')?.value||localStorage.getItem('at_xeroClientId')||'').trim();
-  const clientSecret=(document.getElementById('cfg-xero-client-secret')?.value||localStorage.getItem('at_xeroClientSecret')||'').trim();
   if(!clientId){alert('Paste your Xero Client ID first in Settings → Xero.');return;}
   // Note: clientSecret is optional — PKCE apps don't use one
   localStorage.setItem('at_xeroClientId',clientId);
@@ -2895,7 +2890,6 @@ function xeroDisconnect(){
   if(el){el.textContent='⚪ Disconnected — credentials cleared';el.style.color='#6b7280';}
   // Clear the UI fields too
   const ci=document.getElementById('cfg-xero-client-id'); if(ci) ci.value='';
-  const cs=document.getElementById('cfg-xero-client-secret'); if(cs) cs.value='';
 }
 
 async function xeroExchangeCode(){
