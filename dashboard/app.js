@@ -2652,8 +2652,14 @@ async function savePilotRecord(jobId){
   j.completion.dispersal = document.getElementById('pr-dispersal')?.value||j.completion.dispersal;
   await saveJob(j);
   renderJobs();
+  // Re-render the modal so Actual summary box (block time, tacho hrs, cost, $/ha) reflects new values
   const btn=document.querySelector('#modal-body button[onclick*="savePilotRecord"]');
-  if(btn){btn.textContent='✅ Saved!';setTimeout(()=>btn.textContent='💾 Save Changes',2000);}
+  if(btn){
+    btn.textContent='✅ Saved!';
+    setTimeout(()=>{ openJob(jobId); }, 800);
+  } else {
+    openJob(jobId);
+  }
 }
 function acSetMode(mode, jobId){
   var hrF=document.getElementById('ac-hr-fields');
