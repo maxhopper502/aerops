@@ -215,12 +215,6 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
         <option value="Kangaroo Island">Kangaroo Island</option>
       </select>
       <span id="sync-dot" style="font-size:.68rem;font-weight:600">⏳ Connecting…</span>
-      <script>
-        // Inline diagnostic — runs immediately before app.js module loads
-        fetch('https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents/jobs?pageSize=1')
-          .then(r=>{ document.getElementById('sync-dot').textContent='REST:'+r.status; })
-          .catch(e=>{ document.getElementById('sync-dot').textContent='REST ERR:'+e.message.slice(0,40); document.getElementById('sync-dot').style.color='red'; });
-      </script>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="openStaffModal()" style="font-size:.72rem">⚙️ Settings</button>
   </div>
@@ -776,7 +770,7 @@ table.rec-tbl tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<script type="module" src="./app.js?v=9"></script>
+<script type="module" src="./app.js?v=10"></script>
 
 
 

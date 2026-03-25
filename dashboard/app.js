@@ -1270,6 +1270,7 @@ function renderScheduler(){
   }).join('');
 
   const ulist = document.getElementById('unscheduled-list');
+  if(!ulist) return;
   if(!unscheduled.length){
     ulist.innerHTML='<div style="font-size:.83rem;color:var(--muted);padding:8px 0">All jobs are scheduled ✅</div>';
     return;
