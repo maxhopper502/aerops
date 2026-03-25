@@ -485,6 +485,134 @@ function openJob(id){
   const h = j.hazards||{};
 
 
+  // ── Streamlined INVOICE modal for priced/invoiced jobs ──
+  if(j.status === 'priced' || j.status === 'invoiced'){
+    const comp = j.completion||{};
+    const rate = j.hourlyRate||3300;
+    const hours = parseFloat(j.actualHours)||(()=>{let t=0;(comp.tachoSessions||[]).forEach(s=>{if(s.stopTacho>s.startTacho)t+=parseFloat(s.stopTacho)-parseFloat(s.startTacho);});if(t===0&&comp.vdoStart&&comp.vdoStop)t=parseFloat(comp.vdoStop)-parseFloat(comp.vdoStart);return t;})();
+    const billingMode = j.billingMode||'hr';
+    const ratePerHa = parseFloat(j.ratePerHa)||0;
+    const chem  = parseFloat(j.chemCost)||0;
+    const other1= parseFloat(j.other1)||0;
+    const other2= parseFloat(j.other2)||0;
+    const flightCharge = billingMode==='ha'?Math.round(ratePerHa*est.totalHa):Math.round(rate*hours);
+    const totalInv = j.billingTotal||j.actualCost||(flightCharge+chem+other1+other2);
+    // Always compute $/ha regardless of billing mode
+    const dollarPerHa = est.totalHa>0 ? (totalInv/est.totalHa) : 0;
+
+    document.getElementById('modal-body').innerHTML = `
+      <!-- Invoice Header -->
+      <div style="background:var(--navy);color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:.7rem;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">${j.status==='invoiced'?'🧾 INVOICED':'💲 READY TO INVOICE'}</div>
+        <div style="font-size:1.15rem;font-weight:800">${j.clientName||'—'}</div>
+        <div style="font-size:.8rem;opacity:.75;margin-top:2px">${j.farmAddress||''} · ${j.airstrip||''}</div>
+      </div>
+
+      <!-- Job Details -->
+      <div class="msec">
+        <div class="msec-title">Job Details</div>
+        <div class="info-grid">
+          <div class="ii"><div class="il">Client</div><div class="iv">${j.clientName||'—'}</div></div>
+          <div class="ii"><div class="il">Agent</div><div class="iv">${j.agentName||'—'}</div></div>
+          <div class="ii"><div class="il">Invoice To</div><div class="iv" style="font-weight:800;color:var(--navy)">${j.invoiceTo||'—'}</div></div>
+          <div class="ii"><div class="il">Sub Email</div><div class="iv">${j.subEmail||'—'}</div></div>
+          <div class="ii"><div class="il">Farm</div><div class="iv">${j.farmAddress||'—'}</div></div>
+          <div class="ii"><div class="il">Airstrip</div><div class="iv">${j.airstrip||'—'}</div></div>
+          <div class="ii"><div class="il">Date</div><div class="iv">${fmtDate(comp.date||j.preferredDate)}</div></div>
+          <div class="ii"><div class="il">Application</div><div class="iv">${j.appType||'—'}${j.appSubType?' — '+j.appSubType:''}</div></div>
+          <div class="ii"><div class="il">Pilot</div><div class="iv">${comp.pilot||'—'}</div></div>
+          <div class="ii"><div class="il">Aircraft</div><div class="iv">${comp.aircraft||'—'}</div></div>
+        </div>
+
+        ${(j.paddocks||[]).filter(p=>p.name||p.ha).length?`
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px">
+          <thead><tr>
+            <th style="text-align:left;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Paddock</th>
+            <th style="text-align:right;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Ha</th>
+            <th style="text-align:left;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Crop</th>
+          </tr></thead>
+          <tbody>${(j.paddocks||[]).filter(p=>p.name||p.ha).map(p=>`<tr>
+            <td style="padding:5px 6px">${p.name||'—'}</td>
+            <td style="padding:5px 6px;text-align:right;font-weight:700">${p.ha||0}</td>
+            <td style="padding:5px 6px;color:var(--muted)">${p.cropType||'—'}</td>
+          </tr>`).join('')}
+          <tr style="border-top:2px solid var(--border)">
+            <td style="padding:6px 6px;font-weight:800;font-size:.85rem">TOTAL</td>
+            <td style="padding:6px 6px;text-align:right;font-weight:800;font-size:.85rem;color:var(--navy)">${est.totalHa.toFixed(2)} ha</td>
+            <td></td>
+          </tr></tbody>
+        </table>`:''}
+      </div>
+
+      <!-- Products -->
+      ${(j.products||[]).filter(p=>p.name).length?`
+      <div class="msec">
+        <div class="msec-title">Products</div>
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <thead><tr>
+            <th style="text-align:left;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Product</th>
+            <th style="text-align:left;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Type</th>
+            <th style="text-align:right;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Rate</th>
+            <th style="text-align:right;padding:5px 6px;font-size:.68rem;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">Total Qty</th>
+          </tr></thead>
+          <tbody>${(j.products||[]).filter(p=>p.name).map(p=>`<tr>
+            <td style="padding:5px 6px;font-weight:700">${p.name}</td>
+            <td style="padding:5px 6px;color:var(--muted)">${p.type||'—'}</td>
+            <td style="padding:5px 6px;text-align:right">${p.rate||0} ${p.unit||''}</td>
+            <td style="padding:5px 6px;text-align:right;font-weight:700">${p.totalQty||p.totalRequired||'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`:''}
+
+      <!-- Invoice Summary — always shows $/ha -->
+      <div class="msec" style="border:2px solid var(--navy)">
+        <div class="msec-title" style="color:var(--navy)">💰 Invoice Summary</div>
+        <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+          <tbody>
+            <tr><td style="padding:7px 6px;color:var(--muted)">Application Charge</td>
+                <td style="padding:7px 6px;text-align:right;font-weight:700">${fmtMoney(flightCharge)}</td></tr>
+            ${chem>0?`<tr><td style="padding:7px 6px;color:var(--muted)">${j.chemDesc||'Airstrip / Loading Area Maintenance'}</td>
+                <td style="padding:7px 6px;text-align:right;font-weight:700">${fmtMoney(chem)}</td></tr>`:''}
+            ${other1>0?`<tr><td style="padding:7px 6px;color:var(--muted)">${j.other1Desc||'Other Charge'}</td>
+                <td style="padding:7px 6px;text-align:right;font-weight:700">${fmtMoney(other1)}</td></tr>`:''}
+            ${other2>0?`<tr><td style="padding:7px 6px;color:var(--muted)">${j.other2Desc||'Other Charge'}</td>
+                <td style="padding:7px 6px;text-align:right;font-weight:700">${fmtMoney(other2)}</td></tr>`:''}
+            <tr style="border-top:2px solid var(--navy)">
+              <td style="padding:10px 6px;font-weight:800;font-size:1.05rem;color:var(--navy)">TOTAL (excl. GST)</td>
+              <td style="padding:10px 6px;text-align:right;font-weight:800;font-size:1.15rem;color:var(--navy)">${fmtMoney(totalInv)}</td></tr>
+            <tr><td style="padding:4px 6px;color:var(--muted)">GST (10%)</td>
+                <td style="padding:4px 6px;text-align:right;color:var(--muted)">${fmtMoney(Math.round(totalInv*0.1))}</td></tr>
+            <tr style="border-top:1.5px solid var(--border)">
+              <td style="padding:8px 6px;font-weight:800;color:var(--green)">TOTAL (incl. GST)</td>
+              <td style="padding:8px 6px;text-align:right;font-weight:800;font-size:1.1rem;color:var(--green)">${fmtMoney(Math.round(totalInv*1.1))}</td></tr>
+            <tr><td style="padding:4px 6px;color:var(--muted);font-size:.8rem">Rate per hectare</td>
+                <td style="padding:4px 6px;text-align:right;font-weight:800;font-size:.95rem;color:var(--navy)">${dollarPerHa>0?'$'+dollarPerHa.toFixed(2)+'/ha':'—'}</td></tr>
+            <tr><td style="padding:4px 6px;color:var(--muted);font-size:.8rem">Total hectares</td>
+                <td style="padding:4px 6px;text-align:right;font-weight:700;font-size:.9rem">${est.totalHa.toFixed(2)} ha</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button onclick="printInvoice('${j.id}')" class="btn btn-navy btn-sm" style="flex:1">🖨️ Print Invoice</button>
+        <button onclick="xeroPushInvoice('${j.id}')" class="btn btn-sm" style="flex:1;background:#13b5ea;color:#fff">🔗 Push to Xero</button>
+        ${j.status!=='invoiced'?`<button onclick="setJobStatus('${j.id}','invoiced')" class="btn btn-sm" style="flex:1;background:#16a34a;color:#fff">✅ Mark Invoiced</button>`:`<button onclick="setJobStatus('${j.id}','priced')" class="btn btn-sm" style="flex:1;background:#f0f4f8;color:var(--navy);border:1.5px solid var(--border)">↩ Reopen</button>`}
+      </div>
+
+      <!-- Status -->
+      <div class="msec" style="margin-top:14px">
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="m-status" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;flex:1">${statusOpts}</select>
+          <button class="btn btn-green btn-sm" onclick="updateStatus('${j.id}')">Update</button>
+          <button onclick="deleteJob('${j.id}')" class="btn btn-sm" style="background:#fee2e2;color:#dc2626">🗑</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-overlay').classList.add('open');
+    return;
+  }
+
   // ── Streamlined modal for pilot_complete jobs ──
   if(j.status === 'pilot_complete'){
     const comp = j.completion||{};
