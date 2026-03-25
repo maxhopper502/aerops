@@ -1122,7 +1122,7 @@ function renderStatusTab({statusFilter, listId, countId, searchId, stripId, empt
         ${prods?`<span>🧪 ${prods} product${prods!==1?'s':''}</span>`:''}
       </div>
       ${nextStatus?`<div style="margin-top:8px;text-align:right">
-        <button class="btn btn-sm" style="background:${nextColor};color:#fff" onclick="event.stopPropagation();updateStatus('${j.id}','${nextStatus}')">
+        <button class="btn btn-sm" style="background:${nextColor};color:#fff" onclick="event.stopPropagation();setJobStatus('${j.id}','${nextStatus}')">
           ${nextLabel}
         </button>
       </div>`:''}
@@ -1160,11 +1160,11 @@ function renderInvoiced(){
   });
 }
 
-function updateStatus(jobId, newStatus){
+function setJobStatus(jobId, newStatus){
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   j.status=newStatus;
   lsSave();
-  fsSaveJob(j).catch(e=>console.warn('updateStatus save:',e));
+  fsSaveJob(j).catch(e=>console.warn('setJobStatus save:',e));
   if(currentTab==='pilotdone') renderPilotDone();
   if(currentTab==='priced') renderPriced();
   if(currentTab==='invoiced') renderInvoiced();
@@ -3048,6 +3048,7 @@ async function xeroPushInvoice(jobId){
 }
 window.xeroConnect=xeroConnect;
 window.updateStatus=updateStatus;
+window.setJobStatus=setJobStatus;
 window.renderPilotDone=renderPilotDone;
 window.renderPriced=renderPriced;
 window.renderInvoiced=renderInvoiced;
