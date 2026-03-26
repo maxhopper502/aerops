@@ -73,8 +73,8 @@ function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remo
 function buildGrid(){
   const el = $('pgrid');
   if(!el){ setTimeout(buildGrid, 100); return; }
-  // Hard-code pilot list to guarantee rendering regardless of PINS object state
-  const list = ['Adam Sullivan','Henry Trealor','Michael Crettenden','Hayden Noles'];
+  // Use live PILOTS from Firestore (set by loadSettingsOnce), fallback to all defaults
+  const list = PILOTS.length ? PILOTS : Object.keys(PINS);
   el.innerHTML = list.map(p=>{
     const parts = p.split(' ');
     const first = parts[0];
@@ -82,6 +82,8 @@ function buildGrid(){
     return '<button class="pbtn" onclick="window.selPilot(\''+p+'\')">'+first+'<br><span style="font-size:.75rem;font-weight:400;opacity:.7">'+rest+'</span></button>';
   }).join('');
 }
+// Called by loadSettingsOnce after Firestore load to refresh the grid with live names
+window.renderPilotBtns = buildGrid;
 
 function selPilot(name){
   pinName=name; pin='';
@@ -123,20 +125,34 @@ function signOut(){
   dots(); go('s-login');
 }
 
+function selAllJobs(){
+  pilot='__all__'; localStorage.removeItem('at_pilot');
+  onLogin();
+}
+
 /* ── Load Jobs ───────────────────────────── */
 async function loadJobs(){
   go('s-jobs'); const td=today();
-  $('dtlbl').textContent=fmtD(td); $('aclbl').textContent='Loading…';
-  $('jlist').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><div class="spin"></div><div style="margin-top:14px">Loading your jobs…</div></div>';
+  $('dtlbl').textContent=fmtD(td);
+  const isAll = pilot==='__all__';
+  $('aclbl').textContent=isAll?'All Pilots — Today':'Loading…';
+  $('jlist').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><div class="spin"></div><div style="margin-top:14px">Loading jobs…</div></div>';
   try{
     const snap=await getDocs(collection(db,'jobs'));
     const all=snap.docs.map(d=>({id:d.id,...d.data()}));
-    jobs=all.filter(j=>j.schedule?.pilot===pilot
-      &&(j.schedule?.scheduledDate||j.preferredDate)===td
-      &&!['complete','invoiced'].includes(j.status))
-      .sort((a,b)=>(a.schedule?.estStart||a.schedule?.startTime||'23:59').localeCompare(b.schedule?.estStart||b.schedule?.startTime||'23:59'));
-    const ac=[...new Set(jobs.map(j=>j.schedule?.aircraft).filter(Boolean))].join(', ');
-    $('aclbl').textContent=ac?'Flying: '+ac:pilot;
+    jobs=all.filter(j=>{
+      const jDate=(j.schedule?.scheduledDate||j.preferredDate);
+      if(jDate!==td) return false;
+      if(['complete','invoiced'].includes(j.status)) return false;
+      if(isAll) return true;
+      return j.schedule?.pilot===pilot;
+    }).sort((a,b)=>(a.schedule?.estStart||a.schedule?.startTime||'23:59').localeCompare(b.schedule?.estStart||b.schedule?.startTime||'23:59'));
+    if(!isAll){
+      const ac=[...new Set(jobs.map(j=>j.schedule?.aircraft).filter(Boolean))].join(', ');
+      $('aclbl').textContent=ac?'Flying: '+ac:pilot;
+    } else {
+      $('aclbl').textContent='All Pilots — '+jobs.length+' job'+(jobs.length!==1?'s':'');
+    }
     $('jcnt').textContent=jobs.length;
     renderJobs();
   }catch(e){
@@ -890,7 +906,7 @@ buildGrid();
 if(pilot&&PINS[pilot]){onLogin();}else{go("s-login");}
 
 /* ── Expose ──────────────────────────────── */
-window.selPilot=selPilot;window.pt=pt;window.pc=pc;window.signOut=signOut;
+window.selPilot=selPilot;window.pt=pt;window.pc=pc;window.signOut=signOut;window.selAllJobs=selAllJobs;
 window.goJobs=goJobs;window.goDetail=goDetail;window.goComplete=goComplete;window.goRunning=goRunning;window.goRunning_for=goRunning_for;window.pauseJob=pauseJob;window.showPauseModal=showPauseModal;window.closePauseModal=closePauseModal;window.stampPause=stampPause;window.confirmPause=confirmPause;window.pnt=pnt;window.pnb=pnb;window.finishJob=finishJob;
 window.startJob=startJob;window.confirmStart=confirmStart;window.stamp=stamp;window.calcDT=calcDT;
 window.refetch=refetch;window.submitJob=submitJob;
