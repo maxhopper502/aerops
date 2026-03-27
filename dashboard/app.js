@@ -2224,8 +2224,8 @@ function openStaffModal(){
 function closeStaffModal(){ document.getElementById('staff-modal-overlay').classList.remove('open'); }
 function closeStaffOnBg(e){ if(e.target===document.getElementById('staff-modal-overlay')) closeStaffModal(); }
 async function saveStaff(){
-  // Save Xero settings to localStorage
-  const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci) { if(_sxci.value.trim()) localStorage.setItem('at_xeroClientId',_sxci.value.trim()); else localStorage.removeItem('at_xeroClientId'); }
+  // Save Xero settings to localStorage — only update Client ID if a value is provided (never blank it out on save)
+  const _sxci=document.getElementById('cfg-xero-client-id'); if(_sxci && _sxci.value.trim()) localStorage.setItem('at_xeroClientId',_sxci.value.trim());
   const _sxis=document.getElementById('cfg-xero-inv-status'); if(_sxis)localStorage.setItem('at_xeroInvStatus',_sxis.value);
   const _sxtr=document.getElementById('cfg-xero-terms'); if(_sxtr)localStorage.setItem('at_xeroTerms',_sxtr.value);
   const _sxac=document.getElementById('cfg-xero-account'); if(_sxac)localStorage.setItem('at_xeroAccount',_sxac.value.trim());
