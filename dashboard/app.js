@@ -3027,19 +3027,50 @@ async function xeroExchangeCode(){
       if(data.refresh_token) localStorage.setItem('at_xeroRefresh',data.refresh_token);
       const expiry=Date.now()+(data.expires_in||1800)*1000;
       localStorage.setItem('at_xeroExpiry',String(expiry));
-      // Get tenant (organisation) ID — wrap in try/catch as api.xero.com/connections may have CORS on some browsers
+      // Extract tenantId from JWT payload (no extra network call needed)
       let tenantName='';
       try{
-        const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+data.access_token,'Content-Type':'application/json'}});
-        const connections=await connResp.json();
-        if(connections&&connections[0]){
-          localStorage.setItem('at_xeroTenantId',connections[0].tenantId);
-          localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
-          tenantName=connections[0].tenantName||'';
+        // Decode the access token JWT to get authentication_event_id / xero tenant info
+        const jwtPayload=JSON.parse(atob(data.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        // Try JWT claims for tenantId
+        const jwtTenant=jwtPayload.xero_userid||jwtPayload.sub||'';
+        // Also try the /connections endpoint (CORS works on some browsers/versions)
+        try{
+          const connResp=await fetch('https://api.xero.com/connections',{
+            headers:{'Authorization':'Bearer '+data.access_token,'Content-Type':'application/json','Accept':'application/json'}
+          });
+          if(connResp.ok){
+            const connections=await connResp.json();
+            if(connections&&connections[0]){
+              localStorage.setItem('at_xeroTenantId',connections[0].tenantId);
+              localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+              tenantName=connections[0].tenantName||'';
+            }
+          }
+        }catch(corsErr){
+          // CORS blocked — use userinfo endpoint as fallback
+          try{
+            const uiResp=await fetch('https://identity.xero.com/connect/userinfo',{
+              headers:{'Authorization':'Bearer '+data.access_token,'Accept':'application/json'}
+            });
+            if(uiResp.ok){
+              const ui=await uiResp.json();
+              // xero_userid can be used as tenantId for single-org PKCE apps
+              if(ui.xero_userid){
+                localStorage.setItem('at_xeroTenantId',ui.xero_userid);
+                localStorage.setItem('at_xeroOrgName',ui.given_name||ui.name||'');
+                tenantName=ui.given_name||'';
+              }
+            }
+          }catch(e2){console.warn('userinfo fallback failed:',e2);}
+        }
+        // If still no tenantId, store JWT xero_userid as last resort
+        if(!localStorage.getItem('at_xeroTenantId')&&jwtTenant){
+          localStorage.setItem('at_xeroTenantId',jwtTenant);
+          console.log('Using JWT xero_userid as tenantId fallback:',jwtTenant);
         }
       }catch(connErr){
-        // CORS may block this — tenant ID will be fetched on first invoice push
-        console.warn('Could not fetch Xero tenant ID yet — will retry on invoice push:',connErr.message);
+        console.warn('Could not extract tenant ID:',connErr.message);
       }
       const el=document.getElementById('xero-status');
       if(el){el.textContent='✅ Connected'+(tenantName?' — '+tenantName:'');el.style.color='#16a34a';}
@@ -3095,17 +3126,21 @@ async function xeroPushInvoice(jobId){
   // If tenant ID wasn't captured during connect (CORS), fetch it now
   let tenantId=localStorage.getItem('at_xeroTenantId');
   if(!tenantId){
+    // Try connections endpoint, then userinfo, then JWT decode
     try{
-      const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
-      const connections=await connResp.json();
-      if(connections&&connections[0]){
-        tenantId=connections[0].tenantId;
-        localStorage.setItem('at_xeroTenantId',tenantId);
-        localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');
+      const connResp=await fetch('https://api.xero.com/connections',{headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/json'}});
+      if(connResp.ok){const connections=await connResp.json();if(connections&&connections[0]){tenantId=connections[0].tenantId;localStorage.setItem('at_xeroTenantId',tenantId);localStorage.setItem('at_xeroOrgName',connections[0].tenantName||'');}}
+    }catch(e){
+      try{
+        const uiResp=await fetch('https://identity.xero.com/connect/userinfo',{headers:{'Authorization':'Bearer '+token,'Accept':'application/json'}});
+        if(uiResp.ok){const ui=await uiResp.json();if(ui.xero_userid){tenantId=ui.xero_userid;localStorage.setItem('at_xeroTenantId',tenantId);}}
+      }catch(e2){
+        // Last resort: decode JWT
+        try{const p=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(p.xero_userid){tenantId=p.xero_userid;localStorage.setItem('at_xeroTenantId',tenantId);}}catch(e3){}
       }
-    }catch(e){console.warn('Tenant fetch failed:',e);}
+    }
   }
-  if(!tenantId){alert('Xero connected but could not get organisation ID. Please disconnect and reconnect in Settings → Xero.');return;}
+  if(!tenantId){alert('Xero connected but could not get organisation ID. Please disconnect and reconnect in Settings \u2192 Xero.');return;}
   const j=jobs.find(j=>j.id===jobId); if(!j) return;
   const est=estimateJob(j);
   const invStatus=localStorage.getItem('at_xeroInvStatus')||'AUTHORISED';
