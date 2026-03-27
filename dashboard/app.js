@@ -2970,10 +2970,9 @@ async function pkceChallenge(){
 async function xeroConnect(){
   const clientId=(document.getElementById('cfg-xero-client-id')?.value||localStorage.getItem('at_xeroClientId')||'').trim();
   if(!clientId){alert('Paste your Xero Client ID first in Settings → Xero.');return;}
-  // Note: clientSecret is optional — PKCE apps don't use one
+  // PKCE flow — no client secret needed or used
   localStorage.setItem('at_xeroClientId',clientId);
-  if(clientSecret) localStorage.setItem('at_xeroClientSecret',clientSecret);
-  else localStorage.removeItem('at_xeroClientSecret');
+  localStorage.removeItem('at_xeroClientSecret');
   const {verifier,challenge}=await pkceChallenge();
   localStorage.setItem('at_xeroVerifier',verifier);
   const state=Math.random().toString(36).slice(2);
