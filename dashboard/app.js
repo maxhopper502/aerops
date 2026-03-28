@@ -1474,13 +1474,14 @@ function setAppType(type){
 }
 
 function setSubtypeDash(subtype, btn){
-  // Highlight selected
+  // Remove previous selection highlight from ALL subtype buttons first
   document.querySelectorAll('.subtype-dash-btn').forEach(b=>{
-    b.style.background='rgba(255,255,255,.1)';b.style.borderColor='rgba(255,255,255,.3)';b.style.color='rgba(255,255,255,.8)';
+    const isSpray=b.closest('.spray-sub-types');
+    if(isSpray){b.style.background='rgba(255,255,255,.1)';b.style.borderColor='rgba(255,255,255,.3)';b.style.color='rgba(255,255,255,.8)';}
+    else{b.style.background='rgba(255,255,255,.15)';b.style.borderColor='rgba(255,255,255,.35)';b.style.color='rgba(255,255,255,.85)';}
+    b.classList.remove('sel');
   });
-  btn.style.background='rgba(255,255,255,.9)';
-  btn.style.borderColor='rgba(255,255,255,.9)';
-  btn.style.color='#1a3a5c';
+  btn.style.background='rgba(255,255,255,.95)';btn.style.borderColor='rgba(255,255,255,1)';btn.style.color='#1a3a5c';btn.classList.add('sel');
   const hidden=document.getElementById('appsubtype-hidden');
   if(hidden) hidden.value=subtype;
   // Auto-set water rate for misting
@@ -1605,7 +1606,7 @@ function resetForm(){
 function populateForm(j){
   const f = document.getElementById('new-job-form');
   document.getElementById('edit-job-id').value=j.id;
-  const set=(n,v)=>{ const el=f.querySelector('[name="'+n+'"]'); if(el) el.value=v||''; };
+  const set=(n,v)=>{ const el=f.querySelector('[name="'+n+'"]'); if(el){ if(n==='base'&&(!v||v==='')) return; el.value=v||''; } };
   set('clientName',j.clientName);set('agentName',j.agentName);
   set('subName',j.subName);set('subEmail',j.subEmail);set('subMobile',j.subMobile);
   set('invoiceTo',j.invoiceTo);set('preferredDate',j.preferredDate);
@@ -1619,7 +1620,9 @@ function populateForm(j){
   if(j.appSubType){
     setTimeout(()=>{
       const btns=document.querySelectorAll('.subtype-dash-btn');
-      btns.forEach(b=>{ if(b.textContent.includes(j.appSubType)){ setSubtypeDash(j.appSubType,b); } });
+      let matched=false;
+      btns.forEach(b=>{ if(b.textContent.trim().includes(j.appSubType)){ setSubtypeDash(j.appSubType,b); matched=true; } });
+      if(!matched) console.warn('populateForm: appSubType "'+j.appSubType+'" no button match');
     },50);
   }
   const h=j.hazards||{};
