@@ -6,7 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#1a3a5c"/>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<title>Aerotech – Aerial Application Request</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <title>Aerotech — Aerial Application Request</title>
 <link rel="apple-touch-icon" href="./icon-512.png"/>
 <link rel="icon" type="image/png" href="./icon-512.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -123,7 +125,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 1 — Contact & Client Info            -->
+<!-- STEP 1 - Contact & Client Info            -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step active" id="s1">
   <div class="step-dots">
@@ -136,7 +138,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg" id="f-base">
       <label>📍 Aerotech Base / Region <span class="req">*</span></label>
       <select id="base" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;font-weight:600;color:var(--navy)">
-        <option value="">— Select your region —</option>
+        <option value="">- Select your region -</option>
         <option value="Eyre Peninsula">Eyre Peninsula</option>
         <option value="Yorke Peninsula">Yorke Peninsula</option>
         <option value="Mid North">Mid North</option>
@@ -207,7 +209,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 2 — Farm & Job Details               -->
+<!-- STEP 2 - Farm & Job Details               -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s2">
   <div class="step-dots">
@@ -299,7 +301,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 3 — Products                         -->
+<!-- STEP 3 - Products                         -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s3">
   <div class="step-dots">
@@ -327,7 +329,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 4 — Hazards & Safety                 -->
+<!-- STEP 4 - Hazards & Safety                 -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s4">
   <div class="step-dots">
@@ -400,12 +402,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg">
       <label>Map provided?</label>
       <div class="yn-row">
-        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes — upload below</button>
-        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No — I'll send later</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes - upload below</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No - I'll send later</button>
       </div>
-      <!-- File upload area — shown always so client can attach regardless of yes/no -->
+      <!-- File upload area - shown always so client can attach regardless of yes/no -->
       <div style="margin-top:12px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">ATTACH MAP / RECOMMENDATION (PDF, JPG, PNG — max 10MB)</label>
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">ATTACH MAP / RECOMMENDATION (PDF, JPG, PNG - max 10MB)</label>
         <div id="map-drop-zone" style="border:2.5px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-top:6px" onclick="document.getElementById('map-file-input').click()">
           <div style="font-size:2rem;margin-bottom:6px">📎</div>
           <div style="font-size:.83rem;font-weight:700;color:var(--navy)">Tap to attach file</div>
@@ -423,7 +425,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 5 — Review & Submit                  -->
+<!-- STEP 5 - Review & Submit                  -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s5">
   <div class="step-dots">
@@ -465,9 +467,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <p>Your aerial application request has been sent to the Aerotech team. We'll be in touch to confirm your booking.</p>
     <div class="ref-box">
       <div class="ref-label">Reference Number</div>
-      <div class="ref-val" id="ref-num">—</div>
+      <div class="ref-val" id="ref-num">-</div>
     </div>
     <p id="done-email-note" style="margin-top:16px;font-size:.82rem;color:#065f46;font-weight:600">📧 A confirmation email has been sent to you with all the job details.</p>
+    <!-- Map preview of submitted paddocks -->
+    <div id="client-map-wrap" style="display:none;margin-top:16px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">📍 Paddock Map</div>
+      <div id="client-map" style="height:260px;border-radius:10px;overflow:hidden;border:2px solid var(--border)"></div>
+    </div>
     <div style="background:#f0fdf4;border-radius:10px;padding:14px;margin-top:16px;font-size:.78rem;color:#374151;text-align:left">
       <strong>What happens next?</strong><br/>
       Our operations team will review your request and contact you within 1 business day to confirm scheduling, weather windows, and any additional requirements.
@@ -513,7 +520,7 @@ const TOTAL = 5;
 /* ── Map file upload handler ── */
 async function handleMapFile(input){
   const file = input.files[0]; if(!file) return;
-  if(file.size > 10*1024*1024){ alert('File too large — maximum 10MB'); input.value=''; return; }
+  if(file.size > 10*1024*1024){ alert('File too large - maximum 10MB'); input.value=''; return; }
   const statusEl = document.getElementById('map-file-status');
   const dropZone = document.getElementById('map-drop-zone');
   statusEl.style.display='block';
@@ -534,7 +541,7 @@ async function handleMapFile(input){
     dropZone.innerHTML='<div style="font-size:1.5rem">📎</div><div style="font-size:.83rem;font-weight:700;color:#16a34a">'+file.name+'</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px">Tap to replace</div>';
   }catch(e){
     console.warn('Map upload error:',e);
-    statusEl.innerHTML='<span style="color:#dc2626">⚠️ Upload failed — map will need to be emailed. ('+e.message+')</span>';
+    statusEl.innerHTML='<span style="color:#dc2626">⚠️ Upload failed - map will need to be emailed. ('+e.message+')</span>';
     dropZone.style.borderColor='#dc2626';
     mapFileUrl = null;
   }
@@ -545,6 +552,36 @@ const ynVals  = {};
 /* ── Helpers ── */
 function $(id){ return document.getElementById(id); }
 function go(id){ document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); window.scrollTo(0,0); }
+
+const ESRI_SAT_C='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const ESRI_LBL_C='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const AIRSTRIP_COORDS={
+  'Cummins':{lat:-34.27,lon:135.72},'Trelour\'s':{lat:-34.10,lon:135.55},
+  'Smithy\'s':{lat:-34.15,lon:135.60},'Karkoo':{lat:-33.95,lon:135.45},
+  'Heymans':{lat:-34.30,lon:135.80},'Rob Mac\'s':{lat:-34.20,lon:135.65},
+  'Fitzy\'s':{lat:-34.05,lon:135.70},'Modras':{lat:-34.35,lon:135.50}
+};
+
+function showClientMap(data){
+  const wrap=document.getElementById('client-map-wrap');
+  const mapEl=document.getElementById('client-map');
+  if(!wrap||!mapEl) return;
+  wrap.style.display='block';
+  if(mapEl._leaflet_map) mapEl._leaflet_map.remove();
+  const c=(AIRSTRIP_COORDS[data.airstrip]||{lat:-34.2,lon:135.7});
+  const map=L.map('client-map',{zoomControl:true}).setView([c.lat,c.lon],14);
+  L.tileLayer(ESRI_SAT_C,{maxZoom:19}).addTo(map);
+  L.tileLayer(ESRI_LBL_C,{maxZoom:19,opacity:.8}).addTo(map);
+  mapEl._leaflet_map=map;
+  L.marker([c.lat,c.lon],{
+    icon:L.divIcon({html:'<div style="font-size:22px">✈️</div>',className:'',iconAnchor:[11,22],iconSize:[22,22]})
+  }).bindPopup('<b>'+(data.airstrip||'Farm')+'</b><br>'+(data.farmAddress||'')).addTo(map);
+  const pads=data.paddocks||[];
+  if(pads.length){
+    const list=pads.map(p=>'<li><b>'+(p.name||'Paddock')+'</b>: '+(p.ha||0)+' ha'+(p.cropType?' ('+p.cropType+')':'')+'</li>').join('');
+    L.popup().setLatLng([c.lat,c.lon]).setContent('<b>Paddocks:</b><ul style="margin:4px 0;padding-left:18px">'+list+'</ul>').openOn(map);
+  }
+}
 
 /* ── Yes/No toggle ── */
 const SEL_STYLE   = 'flex:1;padding:11px;border:2px solid var(--navy);border-radius:10px;background:#e8eef5;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;color:var(--navy)';
@@ -634,7 +671,7 @@ function addPaddock(){
   tr.innerHTML =
     '<td><input type="text" placeholder="Paddock name" id="pd-name-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem"/></td>'+
     '<td><input type="number" placeholder="0" min="0" step="0.1" id="pd-ha-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem" oninput="calcTotalHa()"/></td>'+
-    '<td><select id="pd-crop-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;background:#fff"><option value="">— Crop —</option>'+CROPS.map(c=>'<option>'+c+'</option>').join('')+'</select></td>';
+    '<td><select id="pd-crop-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;background:#fff"><option value="">- Crop -</option>'+CROPS.map(c=>'<option>'+c+'</option>').join('')+'</select></td>';
   tbody.appendChild(tr);
   calcTotalHa();
 }
@@ -665,7 +702,7 @@ function addProduct(){
   const tr = document.createElement('tr');
   tr.innerHTML =
     '<td><input type="text" placeholder="Product name" id="pr-name-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem"/></td>'+
-    '<td><select id="pr-type-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff"><option value="">— Type —</option>'+PTYPES.map(t=>'<option>'+t+'</option>').join('')+'</select></td>'+
+    '<td><select id="pr-type-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff"><option value="">- Type -</option>'+PTYPES.map(t=>'<option>'+t+'</option>').join('')+'</select></td>'+
     '<td><input type="number" placeholder="0" step="0.01" min="0" id="pr-rate-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem" oninput="calcProductTotal('+i+')"/></td>'+
     '<td><select id="pr-unit-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff">'+units+'</select></td>'+
     '<td><input type="number" placeholder="auto" step="0.1" min="0" id="pr-total-'+i+'" style="width:100%;padding:8px;border:1.5px solid #bfdbfe;border-radius:8px;font-size:.82rem;background:#eff6ff;color:#1e40af;font-weight:700" tabindex="-1"/></td>';
@@ -795,7 +832,7 @@ function buildReview(){
         Farm: ${$('farmAddress').value}<br>
         ${$('airstrip').value?'Airstrip: '+$('airstrip').value+'<br>':''}
         Paddocks: <strong>${paddocks.length}</strong> (${totalHa.toFixed(1)} ha total)<br>
-        ${paddocks.slice(0,3).map(p=>p.name+' — '+p.ha+' ha').join(', ')}${paddocks.length>3?' + more':''}
+        ${paddocks.slice(0,3).map(p=>p.name+' - '+p.ha+' ha').join(', ')}${paddocks.length>3?' + more':''}
       </div>
     </div>
     <div class="card">
@@ -919,17 +956,17 @@ async function submitForm(){
 
   // Build plain-text job summary for emails / mailto fallback
   function buildSummary(ref){
-    const pad = paddocks.map(p=>`  • ${p.name||'Unnamed'}: ${p.ha||0} ha (${p.cropType||'—'})`).join('\n')||'  —';
-    const prod = products.map(p=>`  • ${p.name}: ${p.rate} ${p.unit} | Total: ${p.totalQty||'—'}`).join('\n')||'  —';
+    const pad = paddocks.map(p=>`  • ${p.name||'Unnamed'}: ${p.ha||0} ha (${p.cropType||'-'})`).join('\n')||'  -';
+    const prod = products.map(p=>`  • ${p.name}: ${p.rate} ${p.unit} | Total: ${p.totalQty||'-'}`).join('\n')||'  -';
     return [
-      `AERIAL APPLICATION REQUEST — REF: ${ref}`,
+      `AERIAL APPLICATION REQUEST - REF: ${ref}`,
       ``,
       `Client:       ${data.clientName}`,
       `Contact:      ${data.subName} | ${data.subMobile} | ${data.subEmail}`,
       `Farm Address: ${data.farmAddress}`,
       `Airstrip:     ${data.airstrip}`,
       `Date Needed:  ${data.preferredDate}`,
-      `App Type:     ${data.appType}${data.appSubType?' — '+data.appSubType:''}`,
+      `App Type:     ${data.appType}${data.appSubType?' - '+data.appSubType:''}`,
       data.appType!=='Spread' ? `Water Rate:   ${data.waterRate} L/ha` : '',
       `Total Area:   ${totalHa.toFixed(1)} ha`,
       ``,
@@ -939,7 +976,7 @@ async function submitForm(){
       `PRODUCTS:`,
       prod,
       ``,
-      `Notes: ${data.notes||'—'}`,
+      `Notes: ${data.notes||'-'}`,
       ``,
       `Submitted via Aerotech Client Request Form.`,
     ].filter(l=>l!==false&&l!==null&&l!==undefined).join('\n');
@@ -968,7 +1005,7 @@ async function submitForm(){
     // ── Email notifications ──
     const summary = buildSummary(ref);
     const allNotify = [data.subEmail, data.notifyEmail1, data.notifyEmail2].filter(Boolean);
-    const subject   = encodeURIComponent('Aerial Application Request — '+ref);
+    const subject   = encodeURIComponent('Aerial Application Request - '+ref);
     const body      = encodeURIComponent(summary);
 
     if(EJS_PUB_KEY && EJS_SVC_ID && EJS_CLIENT_T){
@@ -996,16 +1033,17 @@ async function submitForm(){
     const doneEl=$('done-email-note');
     if(doneEl){
       if(EJS_PUB_KEY){ doneEl.textContent='📧 Confirmation sent to '+data.subEmail+(data.notifyEmail1?' and '+data.notifyEmail1:''); }
-      else { doneEl.textContent='📧 Please check your email app — a summary has been pre-filled for you to send.'; }
+      else { doneEl.textContent='📧 Please check your email app - a summary has been pre-filled for you to send.'; }
     }
 
     $('nav-row').style.display='none';
     go('s-done');
+    showClientMap(data);
   }catch(e){
     console.error(e);
     btn.disabled=false;
     btn.innerHTML='Submit Job Request ✈️';
-    alert('Submission failed — please check your connection and try again.\n\n'+e.message);
+    alert('Submission failed - please check your connection and try again.\n\n'+e.message);
   }
 }
 
