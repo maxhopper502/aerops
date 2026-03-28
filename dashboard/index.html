@@ -20,7 +20,29 @@
   --radius:12px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-/* Header */
+/* Snap marker styles */
+.snap-vtx{background:#fff;border:2px solid #3b82f6;border-radius:50%;width:10px;height:10px;cursor:pointer;box-shadow:0 0 0 2px rgba(59,130,246,.3)}
+.snap-midpt{background:#fff;border:2.5px solid #f59e0b;border-radius:50%;width:9px;height:9px;cursor:pointer;box-shadow:0 0 0 2px rgba(245,158,11,.25);transform:rotate(45deg)}
+.snap-vtx:hover,.snap-midpt:hover{transform:scale(1.5);box-shadow:0 0 0 3px rgba(59,130,246,.5)}
+/* Live polygon ha label */
+.poly-ha-label{background:rgba(30,64,175,.88);color:#fff;padding:4px 9px;border-radius:6px;font-size:.78rem;font-weight:700;pointer-events:none;text-align:center;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+/* Naming modal */
+#paddock-name-modal{
+  display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  background:#fff;border-radius:12px;padding:16px 18px;width:300px;z-index:1000;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center
+}
+#paddock-name-modal.open{display:block}
+.paddock-name-modal-title{font-size:.88rem;font-weight:800;color:var(--navy);margin-bottom:12px}
+.paddock-name-input{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;margin-bottom:10px}
+.paddock-name-ha{font-size:.78rem;color:#6b7280;margin-bottom:12px}
+.paddock-name-actions{display:flex;gap:8px}
+.paddock-name-actions button{flex:1;padding:9px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;border:none}
+.paddock-confirm-btn{background:var(--navy);color:#fff}
+.paddock-confirm-btn:hover{background:#2d527a}
+.paddock-cancel-btn{background:#f3f4f6;color:#374151;border:1.5px solid #d1d5db}
+.paddock-cancel-btn:hover{background:#e5e7eb}
+
 .app-header{background:var(--navy);color:#fff;padding:14px 16px 0;position:sticky;top:0;z-index:100}
 .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .header-top h1{font-size:1.2rem;font-weight:700}
@@ -883,6 +905,9 @@ let _drawingMode = null;
 let _polyPoints = [];
 let _polyPreview = null;
 let _drawCursor = null;
+let _snapMarkers = [];   // visual snap-point indicators
+let _hoveredSnap = null; // currently hovered snap marker latlng
+let _polyHaLabel = null; // live ha preview label on polygon
 
 const ESRI_SAT = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -940,6 +965,8 @@ function initJobMap(jobId){
   // Map click handler for drawing
   _map.on('click', onMapClick);
   _map.on('dblclick', onMapDblClick);
+  refreshSnapMarkers();
+  updatePaddockSummary();
 }
 
 function setDefaultView(job){
@@ -954,6 +981,72 @@ function setDefaultView(job){
   _map.setView([c.lat,c.lon],14);
 }
 
+// ── Snap helpers ──────────────────────────────────────────────
+function getSnapTarget(latlng){
+  const THRESHOLD = 20 / Math.pow(2, _map.getZoom()); // ~20px in map units
+  let best=null, bestD=THRESHOLD;
+  _drawnLayers.forEach(item=>{
+    if(item.type!=='polygon') return;
+    const pts=item.layer.getLatLngs()[0];
+    // Snap to existing vertices
+    pts.forEach(pt=>{
+      const d=latlng.distanceTo(pt);
+      if(d<bestD){bestD=d;best=pt;}
+    });
+    // Snap to edge midpoints
+    for(let i=0;i<pts.length-1;i++){
+      const mid=L.latLng((pts[i].lat+pts[i+1].lat)/2,(pts[i].lng+pts[i+1].lng)/2);
+      const d=latlng.distanceTo(mid);
+      if(d<bestD){bestD=d;best=mid;}
+    }
+  });
+  return best;
+}
+
+function refreshSnapMarkers(){
+  clearSnapMarkers();
+  if(_drawingMode!=='polygon') return;
+  const THRESHOLD=20/Math.pow(2,_map.getZoom());
+  const pts=[];
+  _drawnLayers.forEach(item=>{
+    if(item.type!=='polygon') return;
+    const layerPts=item.layer.getLatLngs()[0];
+    layerPts.forEach(pt=>pts.push({pt,type:'vtx',layer:item.layer}));
+    for(let i=0;i<layerPts.length-1;i++){
+      const mid=L.latLng((layerPts[i].lat+layerPts[i+1].lat)/2,(layerPts[i].lng+layerPts[i+1].lng)/2);
+      pts.push({pt:mid,type:'mid',layer:item.layer});
+    }
+  });
+  pts.forEach(({pt,type})=>{
+    const isVtx=type==='vtx';
+    const m=L.marker(pt,{
+      icon:L.divIcon({
+        html:'<div class="'+(isVtx?'snap-vtx':'snap-midpt')+'"></div>',
+        className:'',iconAnchor:[5,5],iconSize:[10,10]
+      }),
+      interactive:true,zIndexOffset:1000
+    }).addTo(_map);
+    m.on('click',function(ev){
+      L.DomEvent.stop(ev);
+      _hoveredSnap=pt;
+      onSnapClick(pt);
+    });
+    _snapMarkers.push(m);
+  });
+}
+
+function clearSnapMarkers(){
+  _snapMarkers.forEach(m=>{try{_map.removeLayer(m);}catch(e){}});
+  _snapMarkers=[];
+}
+
+function onSnapClick(latlng){
+  if(_drawingMode!=='polygon') return;
+  _polyPoints.push(latlng);
+  updatePolyPreview();
+  refreshSnapMarkers();
+}
+
 function onMapClick(e){
   if(!_drawingMode) return;
   if(_drawingMode==='marker'||_drawingMode==='powerline'){
@@ -966,27 +1059,92 @@ function onMapClick(e){
     return;
   }
   if(_drawingMode==='polygon'){
-    _polyPoints.push(e.latlng);
+    // Check for snap target first
+    const snap=getSnapTarget(e.latlng);
+    const usePt = snap || e.latlng;
+    _polyPoints.push(usePt);
+    if(snap) _hoveredSnap=snap;
     updatePolyPreview();
+    refreshSnapMarkers();
   }
 }
 function onMapDblClick(e){
   if(_drawingMode!=='polygon') return;
   L.DomEvent.stop(e);
   if(_polyPoints.length<3){ alert('Need at least 3 points to close a paddock.'); _polyPoints=[]; updatePolyPreview(); return; }
-  const name = prompt('Paddock name:','')||('Paddock '+((_drawnLayers.filter(l=>l.type==='polygon').length)+1));
-  const ha = calcHectares(_polyPoints);
-  const poly = L.polygon(_polyPoints,{color:'#22c55e',weight:2.5,fillColor:'#bbf7d0',fillOpacity:.35})
-    .bindTooltip(name+'\n'+ha.toFixed(1)+' ha',{permanent:true,direction:'center'})
-    .addTo(_map);
-  _drawnLayers.push({type:'polygon', layer:poly, name, hectares:ha});
-  if(_polyPreview){ _map.removeLayer(_polyPreview); _polyPreview=null; }
+  // Show naming modal instead of prompt
+  openPaddockModal();
+}
+
+function openPaddockModal(){
+  const ha=calcHectares(_polyPoints);
+  const num=_drawnLayers.filter(l=>l.type==='polygon').length+1;
+  const modal=document.getElementById('paddock-name-modal');
+  if(!modal) return;
+  document.getElementById('paddock-modal-ha').textContent='Area: '+ha.toFixed(2)+' ha';
+  document.getElementById('paddock-name-input').value='Paddock '+num;
+  document.getElementById('paddock-name-input').dataset.pendingHa=ha;
+  modal.classList.add('open');
+  const inp=document.getElementById('paddock-name-input');
+  inp.focus(); inp.select();
+}
+
+function confirmPaddock(){
+  const inp=document.getElementById('paddock-name-input');
+  const name=inp.value.trim()||('Paddock '+(_drawnLayers.filter(l=>l.type==='polygon').length+1));
+  const ha=parseFloat(inp.dataset.pendingHa)||0;
+  closePaddockModal();
+  finishPolygon(name,ha);
+}
+
+function cancelPaddock(){
+  closePaddockModal();
   _polyPoints=[];
+  updatePolyPreview();
+}
+
+function closePaddockModal(){
+  const modal=document.getElementById('paddock-name-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+function finishPolygon(name,ha){
+  // Close the polygon
+  const poly=L.polygon(_polyPoints,{color:'#22c55e',weight:2.5,fillColor:'#bbf7d0',fillOpacity:.35}).addTo(_map);
+  poly.bindTooltip('<div class="poly-ha-label">'+name+'<br>'+ha.toFixed(2)+' ha</div>',{
+    permanent:true,direction:'center',className:''
+  });
+  _drawnLayers.push({type:'polygon',layer:poly,name,hectares:ha});
+  if(_polyPreview){_map.removeLayer(_polyPreview);_polyPreview=null;}
+  if(_polyHaLabel){_map.removeLayer(_polyHaLabel);_polyHaLabel=null;}
+  _polyPoints=[];
+  clearSnapMarkers();
+  _hoveredSnap=null;
+  // Update summary
+  updatePaddockSummary();
+  document.getElementById('map-hint').textContent='Click Draw Paddock then click corners on the map. Double-click to finish.';
+}
+
+function updatePaddockSummary(){
+  const haTotal=(_drawnLayers.filter(l=>l.type==='polygon').reduce((s,l)=>s+(l.hectares||0),0)).toFixed(2);
+  const cnt=_drawnLayers.filter(l=>l.type==='polygon').length;
+  const el=document.getElementById('paddock-ha-summary');
+  if(el){el.textContent='Total: '+haTotal+' ha across '+cnt+' paddock'+(cnt!==1?'s':'');}
 }
 function updatePolyPreview(){
   if(_polyPreview){ _map.removeLayer(_polyPreview); _polyPreview=null; }
+  if(_polyHaLabel){ _map.removeLayer(_polyHaLabel); _polyHaLabel=null; }
   if(_polyPoints.length>1){
     _polyPreview = L.polyline(_polyPoints,{color:'#3b82f6',weight:2,dashArray:'5 5'}).addTo(_map);
+  }
+  if(_polyPoints.length>=3){
+    const ha=calcHectares(_polyPoints);
+    const mid=_polyPoints.reduce((s,p)=>L.latLng(s.lat+p.lat,s.lng+p.lng),L.latLng(0,0));
+    mid.lat/=_polyPoints.length; mid.lng/=_polyPoints.length;
+    _polyHaLabel=L.polygon(_polyPoints,{color:'transparent',fillColor:'transparent',fillOpacity:0,interactive:false}).addTo(_map);
+    _polyHaLabel.bindTooltip('<div class="poly-ha-label">'+ha.toFixed(2)+' ha</div>',{
+      permanent:true,direction:'center',className:'',opacity:1
+    });
   }
 }
 function calcHectares(pts){
@@ -1010,15 +1168,33 @@ function mapTool(mode){
     if(b) b.style.background = (_drawingMode===t)?'#dbeafe':'#fff';
   });
   _map.getContainer().style.cursor = _drawingMode?'crosshair':'';
-  if(!_drawingMode&&_polyPreview){ _map.removeLayer(_polyPreview); _polyPreview=null; _polyPoints=[]; }
+  if(!_drawingMode){
+    if(_polyPreview){_map.removeLayer(_polyPreview);_polyPreview=null;}
+    if(_polyHaLabel){_map.removeLayer(_polyHaLabel);_polyHaLabel=null;}
+    _polyPoints=[];
+    clearSnapMarkers();
+  } else {
+    refreshSnapMarkers();
+  }
+  // Update hint text
+  const hint=document.getElementById('map-hint');
+  if(hint){
+    if(_drawingMode==='polygon') hint.textContent='Click map to drop corners. Existing vertices (blue dots) and fence midpoints (orange diamonds) snap to edges.';
+    else if(_drawingMode==='powerline') hint.textContent='Click on a power line to mark it.';
+    else if(_drawingMode==='marker') hint.textContent='Click to mark a hazard location.';
+    else hint.textContent='Click Draw Paddock then click corners on the map. Double-click to finish.';
+  }
 }
 
 function clearMapLayers(jobId){
   if(!confirm('Clear all drawn layers from this job?')) return;
   _drawnLayers.forEach(l=>{ try{_map.removeLayer(l.layer);}catch(e){} });
   _drawnLayers=[];
-  if(_polyPreview){ _map.removeLayer(_polyPreview); _polyPreview=null; }
+  if(_polyPreview){_map.removeLayer(_polyPreview);_polyPreview=null;}
+  if(_polyHaLabel){_map.removeLayer(_polyHaLabel);_polyHaLabel=null;}
   _polyPoints=[];
+  clearSnapMarkers();
+  updatePaddockSummary();
 }
 
 async function saveMapData(jobId){
@@ -1112,6 +1288,8 @@ window.clearMapLayers=clearMapLayers;
 window.saveMapData=saveMapData;
 window.saveMapMeta=saveMapMeta;
 window.exportGeoJSON=exportGeoJSON;
+window.confirmPaddock=confirmPaddock;
+window.cancelPaddock=cancelPaddock;
 </script>
 
 
