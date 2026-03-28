@@ -156,21 +156,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input type="text" id="agentName" placeholder="e.g. John at Elders"/>
     </div>
     <div class="two">
-      <div class="fg" id="f-contactName">
+      <div class="fg" id="f-subName">
         <label>Your Name <span class="req">*</span></label>
         <input type="text" id="subName" placeholder="Full name"/>
-        <div class="err-msg" id="e-contactName">Required</div>
+        <div class="err-msg" id="e-subName">Required</div>
       </div>
-      <div class="fg" id="f-contactPhone">
+      <div class="fg" id="f-subMobile">
         <label>Mobile <span class="req">*</span></label>
         <input type="tel" id="subMobile" placeholder="04XX XXX XXX"/>
-        <div class="err-msg" id="e-contactPhone">Required</div>
+        <div class="err-msg" id="e-subMobile">Required</div>
       </div>
     </div>
-    <div class="fg" id="f-contactEmail">
+    <div class="fg" id="f-subEmail">
       <label>Email Address <span class="req">*</span></label>
       <input type="email" id="subEmail" placeholder="your@email.com"/>
-      <div class="err-msg" id="e-contactEmail">Please enter a valid email</div>
+      <div class="err-msg" id="e-subEmail">Please enter a valid email</div>
     </div>
   </div>
 
@@ -744,9 +744,9 @@ function validate(step){
   if(step===1){
     req('clientName','e-clientName');
     req('base','e-base');
-    req('contactName','e-contactName');
-    req('contactPhone','e-contactPhone');
-    req('contactEmail','e-contactEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
+    req('subName','e-subName');
+    req('subMobile','e-subMobile');
+    req('subEmail','e-subEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
     req('invoiceEmail','e-invoiceEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
   }
   if(step===2){
@@ -846,7 +846,7 @@ function toFSDoc(data){
   return {fields:{
     base:         sv($('base').value),
       clientName:sv(data.clientName), agentName:sv(data.agentName||''),
-    subName:sv(data.contactName), subEmail:sv(data.contactEmail), subMobile:sv(data.contactPhone),
+    subName:sv(data.subName), subEmail:sv(data.subEmail), subMobile:sv(data.subMobile),
     invoiceTo:sv(data.invoiceTo||''), invoiceEmail:sv(data.invoiceEmail||''), chemDelivery:sv(data.chemDelivery||''),
     hasRecommendation:sv(data.hasRec||''),
     preferredDate:sv(data.preferredDate), farmAddress:sv(data.farmAddress),
@@ -925,7 +925,7 @@ async function submitForm(){
       `AERIAL APPLICATION REQUEST — REF: ${ref}`,
       ``,
       `Client:       ${data.clientName}`,
-      `Contact:      ${data.contactName} | ${data.contactPhone} | ${data.contactEmail}`,
+      `Contact:      ${data.subName} | ${data.subMobile} | ${data.subEmail}`,
       `Farm Address: ${data.farmAddress}`,
       `Airstrip:     ${data.airstrip}`,
       `Date Needed:  ${data.preferredDate}`,
@@ -967,27 +967,27 @@ async function submitForm(){
 
     // ── Email notifications ──
     const summary = buildSummary(ref);
-    const allNotify = [data.contactEmail, data.notifyEmail1, data.notifyEmail2].filter(Boolean);
+    const allNotify = [data.subEmail, data.notifyEmail1, data.notifyEmail2].filter(Boolean);
     const subject   = encodeURIComponent('Aerial Application Request — '+ref);
     const body      = encodeURIComponent(summary);
 
     if(EJS_PUB_KEY && EJS_SVC_ID && EJS_CLIENT_T){
       // EmailJS path (if configured)
-      const ejsBase = {ref_number:ref, client_name:data.clientName, contact_name:data.contactName,
+      const ejsBase = {ref_number:ref, client_name:data.clientName, sub_name:data.subName,
         preferred_date:data.preferredDate, app_type:data.appType, farm_address:data.farmAddress,
         total_ha:totalHa.toFixed(1), paddock_list:paddocks.map(p=>p.name+': '+p.ha+' ha').join(', '),
         product_list:products.map(p=>p.name+' '+p.rate+' '+p.unit).join(', '), summary_text:summary,
         map_url:mapFileUrl||'', map_filename:mapFileName||'No map attached'};
       // Client confirmation
-      if(data.contactEmail) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:data.contactEmail}).catch(()=>{});
+      if(data.subEmail) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:data.subEmail}).catch(()=>{});
       // Extra notify recipients
       allNotify.slice(1).forEach(e=>{ if(e) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:e}).catch(()=>{}); });
       // Office alert
       if(EJS_OFFICE_T) emailjs.send(EJS_SVC_ID, EJS_OFFICE_T, {...ejsBase, to_email:EJS_OFFICE_EMAIL}).catch(()=>{});
     } else {
       // Fallback: open mailto on client's device so they can forward their summary
-      if(data.contactEmail){
-        const mt = 'mailto:'+data.contactEmail+'?subject='+subject+'&body='+body;
+      if(data.subEmail){
+        const mt = 'mailto:'+data.subEmail+'?subject='+subject+'&body='+body;
         setTimeout(()=>{ const a=document.createElement('a');a.href=mt;a.click(); }, 800);
       }
     }
@@ -995,7 +995,7 @@ async function submitForm(){
     // Update success screen
     const doneEl=$('done-email-note');
     if(doneEl){
-      if(EJS_PUB_KEY){ doneEl.textContent='📧 Confirmation sent to '+data.contactEmail+(data.notifyEmail1?' and '+data.notifyEmail1:''); }
+      if(EJS_PUB_KEY){ doneEl.textContent='📧 Confirmation sent to '+data.subEmail+(data.notifyEmail1?' and '+data.notifyEmail1:''); }
       else { doneEl.textContent='📧 Please check your email app — a summary has been pre-filled for you to send.'; }
     }
 
