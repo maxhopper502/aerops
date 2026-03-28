@@ -1555,6 +1555,7 @@ function getFormData(){
     base:fd.get('base')||'', clientName:fd.get('clientName'),agentName:fd.get('agentName'),
     subName:fd.get('subName'),subEmail:fd.get('subEmail'),subMobile:fd.get('subMobile'),
     invoiceTo:fd.get('invoiceTo'),preferredDate:fd.get('preferredDate'),
+    invoiceEmail:fd.get('invoiceEmail')||'',
     airstrip:fd.get('airstrip'),farmAddress:fd.get('farmAddress'),
     windDirectionRequired:fd.get('windDirectionRequired'),
     waterRate:parseFloat(fd.get('waterRate'))||30,
@@ -1583,7 +1584,40 @@ function saveNewJob(e){
   const editId = document.getElementById('edit-job-id').value;
   if(editId){
     const idx = jobs.findIndex(j=>j.id===editId);
-    if(idx>=0){ jobs[idx]={...jobs[idx],...data}; saveJob(jobs[idx]); }
+    if(idx>=0){
+      // Preserve nested/existing properties that aren't in the flat form data
+      const {_schedule,_hazards,_products,_paddocks,_completion,_schedule2} = jobs[idx];
+      jobs[idx]={
+        ...jobs[idx],
+        base:data.base||jobs[idx].base||'',
+        clientName:data.clientName||jobs[idx].clientName||'',
+        agentName:data.agentName||jobs[idx].agentName||'',
+        subName:data.subName||jobs[idx].subName||'',
+        subEmail:data.subEmail||jobs[idx].subEmail||'',
+        subMobile:data.subMobile||jobs[idx].subMobile||'',
+        invoiceTo:data.invoiceTo||jobs[idx].invoiceTo||'Client',
+        preferredDate:data.preferredDate||jobs[idx].preferredDate||'',
+        airstrip:data.airstrip||jobs[idx].airstrip||'',
+        farmAddress:data.farmAddress||jobs[idx].farmAddress||'',
+        windDirectionRequired:data.windDirectionRequired||'',
+        waterRate:data.waterRate||jobs[idx].waterRate||30,
+        hasRecommendation:data.hasRecommendation||'no',
+        mapUploaded:data.mapUploaded||'no',
+        chemDelivery:data.chemDelivery||jobs[idx].chemDelivery||'',
+        additionalComments:data.additionalComments||jobs[idx].additionalComments||'',
+        appType:data.appType||jobs[idx].appType||'spray',
+        appSubType:data.appSubType||jobs[idx].appSubType||'',
+        // Don't overwrite nested objects with empty form data
+        paddocks:(_paddocks&&_paddocks.length)?_paddocks:jobs[idx].paddocks||[],
+        products:(_products&&_products.length)?_products:jobs[idx].products||[],
+        hazards:_hazards||jobs[idx].hazards||{},
+        completion:_completion||jobs[idx].completion||{},
+        schedule:_schedule||jobs[idx].schedule||{},
+        // Spread new values over existing job
+        ...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==null&&v!==''))
+      };
+      saveJob(jobs[idx]);
+    }
   } else {
     const autoStatus = data.preferredDate ? 'scheduled' : 'new';
     const nj={id:Date.now().toString(),status:autoStatus,createdAt:new Date().toISOString(),schedule:{scheduledDate:data.preferredDate||''},...data};
@@ -1609,7 +1643,8 @@ function populateForm(j){
   const set=(n,v)=>{ const el=f.querySelector('[name="'+n+'"]'); if(el){ if(n==='base'&&(!v||v==='')) return; el.value=v||''; } };
   set('clientName',j.clientName);set('agentName',j.agentName);
   set('subName',j.subName);set('subEmail',j.subEmail);set('subMobile',j.subMobile);
-  set('invoiceTo',j.invoiceTo);set('preferredDate',j.preferredDate);
+  set('invoiceTo',j.invoiceTo||'Client');set('invoiceEmail',j.invoiceEmail||'');
+  set('preferredDate',j.preferredDate);
   set('airstrip',j.airstrip);set('farmAddress',j.farmAddress);
   set('windDirectionRequired',j.windDirectionRequired);
   set('waterRate',j.waterRate);set('hasRecommendation',j.hasRecommendation);
