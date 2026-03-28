@@ -1643,6 +1643,7 @@ function populateForm(j){
   const set=(n,v)=>{ const el=f.querySelector('[name="'+n+'"]'); if(el){ if(n==='base'&&(!v||v==='')) return; el.value=v||''; } };
   set('clientName',j.clientName);set('agentName',j.agentName);
   set('subName',j.subName);set('subEmail',j.subEmail);set('subMobile',j.subMobile);
+  set('base',j.base); // base dropdown — guard in set() skips if blank
   set('invoiceTo',j.invoiceTo||'Client');set('invoiceEmail',j.invoiceEmail||'');
   set('preferredDate',j.preferredDate);
   set('airstrip',j.airstrip);set('farmAddress',j.farmAddress);
