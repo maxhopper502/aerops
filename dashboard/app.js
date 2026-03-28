@@ -1623,14 +1623,17 @@ function populateForm(j){
     },50);
   }
   const h=j.hazards||{};
-  set('h_powerlines',h.powerlines);set('h_powerlinesDesc',h.powerlinesDesc);
-  set('h_susceptibleCrops',h.susceptibleCrops);set('h_susceptibleDesc',h.susceptibleDesc);
+  // Handle client-form field names: contactName→subName, notes→additionalComments, anyHazards→neighboursConcern
+  if(!h.powerlines && h.mapProvided) h.powerlines=h.mapProvided==='yes'?'yes':'no';
+  set('h_powerlines',h.powerlines);set('h_powerlinesDesc',h.powerlinesDesc||'');
+  set('h_susceptibleCrops',h.susceptibleCrops);set('h_susceptibleDesc',h.susceptibleDesc||'');
   set('h_dwelling',h.dwelling);set('h_neighboursNotified',h.neighboursNotified);
-  set('h_neighboursConcern',h.neighboursConcern);set('h_neighboursDesc',h.neighboursDesc);
-  // Reveal hazard sections
+  set('h_neighboursConcern',h.neighboursConcern||h.anyHazards||'');
+  set('h_neighboursDesc',h.neighboursDesc||h.hazardsDesc||'');
+  set('additionalComments',j.notes||j.additionalComments||'');
   if(h.powerlines==='yes') document.getElementById('rev-pl').style.display='';
   if(h.susceptibleCrops==='yes') document.getElementById('rev-sc').style.display='';
-  if(h.neighboursConcern==='yes') document.getElementById('rev-nc').style.display='';
+  if(h.neighboursConcern==='yes'||h.anyHazards==='yes') document.getElementById('rev-nc').style.display='';
   // Paddocks
   document.getElementById('paddock-tbody').innerHTML='';
   (j.paddocks||[{name:'',ha:0,cropType:'Wheat'}]).forEach(p=>{

@@ -158,18 +158,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="two">
       <div class="fg" id="f-contactName">
         <label>Your Name <span class="req">*</span></label>
-        <input type="text" id="contactName" placeholder="Full name"/>
+        <input type="text" id="subName" placeholder="Full name"/>
         <div class="err-msg" id="e-contactName">Required</div>
       </div>
       <div class="fg" id="f-contactPhone">
         <label>Mobile <span class="req">*</span></label>
-        <input type="tel" id="contactPhone" placeholder="04XX XXX XXX"/>
+        <input type="tel" id="subMobile" placeholder="04XX XXX XXX"/>
         <div class="err-msg" id="e-contactPhone">Required</div>
       </div>
     </div>
     <div class="fg" id="f-contactEmail">
       <label>Email Address <span class="req">*</span></label>
-      <input type="email" id="contactEmail" placeholder="your@email.com"/>
+      <input type="email" id="subEmail" placeholder="your@email.com"/>
       <div class="err-msg" id="e-contactEmail">Please enter a valid email</div>
     </div>
   </div>
@@ -417,7 +417,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="fg">
       <label>Additional Comments</label>
-      <textarea id="notes" placeholder="Anything else we should know..."></textarea>
+      <textarea id="additionalComments" placeholder="Anything else we should know..."></textarea>
     </div>
   </div>
 </div>
@@ -783,8 +783,8 @@ function buildReview(){
       <div style="font-size:.85rem;font-weight:800;color:var(--navy);margin-bottom:10px">👤 Contact Details</div>
       <div style="font-size:.85rem;line-height:1.8">
         <strong>${$('clientName').value}</strong><br>
-        ${$('contactName').value} · ${$('contactPhone').value}<br>
-        ${$('contactEmail').value}
+        ${$('subName').value} · ${$('subMobile').value}<br>
+        ${$('subEmail').value}
         ${ynVals.invoiceTo?'<br>Invoice to: <strong>'+ynVals.invoiceTo+'</strong>':''}
       </div>
     </div>
@@ -846,7 +846,7 @@ function toFSDoc(data){
   return {fields:{
     base:         sv($('base').value),
       clientName:sv(data.clientName), agentName:sv(data.agentName||''),
-    contactName:sv(data.contactName), contactEmail:sv(data.contactEmail), contactPhone:sv(data.contactPhone),
+    subName:sv(data.contactName), subEmail:sv(data.contactEmail), subMobile:sv(data.contactPhone),
     invoiceTo:sv(data.invoiceTo||''), invoiceEmail:sv(data.invoiceEmail||''), chemDelivery:sv(data.chemDelivery||''),
     hasRecommendation:sv(data.hasRec||''),
     preferredDate:sv(data.preferredDate), farmAddress:sv(data.farmAddress),
@@ -864,7 +864,7 @@ function toFSDoc(data){
       hazardsDesc:sv(data.hazards.hazardsDesc||''),
       mapProvided:sv(data.hazards.mapProvided||''),
     }),
-    notes:sv(data.notes||''),
+    additionalComments:sv(data.notes||''),
     status:sv('new'), source:sv('client-form'),
     createdAt:sv(new Date().toISOString()),
   }};
@@ -884,9 +884,9 @@ async function submitForm(){
     base:          $('base').value,
     clientName:    $('clientName').value.trim(),
     agentName:     $('agentName').value.trim(),
-    contactName:   $('contactName').value.trim(),
-    contactEmail:  $('contactEmail').value.trim(),
-    contactPhone:  $('contactPhone').value.trim(),
+    subName:   $('subName').value.trim(),
+    subEmail:  $('subEmail').value.trim(),
+    subMobile:  $('subMobile').value.trim(),
     invoiceTo:     ynVals.invoiceTo||'',
     invoiceEmail:  $('invoiceEmail').value.trim(),
     chemDelivery:  $('chemDelivery').value,
@@ -906,13 +906,13 @@ async function submitForm(){
       susceptibleDesc:   ($('susceptibleDesc')||{}).value||'',
       dwelling:          hazVals.dwelling||'',
       neighboursNotified:hazVals.neighboursNotified||'',
-      anyHazards:        hazVals.anyHazards||'',
-      hazardsDesc:       ($('hazardsDesc')||{}).value||'',
+      neighboursConcern: hazVals.anyHazards||'',
+      neighboursDesc:  ($('hazardsDesc')||{}).value||'',
       mapProvided:       hazVals.mapProvided||'',
       mapFileUrl:        mapFileUrl||'',
       mapFileName:       mapFileName||'',
     },
-    notes:         ($('notes')||{}).value||'',
+    additionalComments:         ($('additionalComments')||{}).value||'',
     notifyEmail1:  ($('notifyEmail1')||{}).value||'',
     notifyEmail2:  ($('notifyEmail2')||{}).value||'',
   };
