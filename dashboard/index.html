@@ -905,8 +905,8 @@ let _drawingMode = null;
 let _polyPoints = [];
 let _polyPreview = null;
 let _drawCursor = null;
+let _hoveredSnap = null; let _snapZoomTimer = null;
 let _snapMarkers = [];   // visual snap-point indicators
-let _hoveredSnap = null; // currently hovered snap marker latlng
 let _polyHaLabel = null; // live ha preview label on polygon
 
 const ESRI_SAT = L.tileLayer(
@@ -928,9 +928,11 @@ function toggleMapPanel(jobId){
 }
 
 function initJobMap(jobId){
-  if(_map){ _map.remove(); _map=null; _drawnLayers=[]; _polyPoints=[]; }
+  if(_map){ _map.remove(); _map=null; }
+  _drawnLayers=[]; _polyPoints=[]; _polyPreview=null; _polyHaLabel=null; _hoveredSnap=null;
+  clearSnapMarkers(); // clear any leftover snap markers from previous session
   _mapJobId = jobId;
-  _map = L.map('job-map',{zoomControl:true});
+  _map = L.map('job-map',{zoomControl:true, preferCanvas:true});
   ESRI_SAT.addTo(_map); ESRI_LABELS.addTo(_map);
 
   // Find job data
@@ -965,6 +967,8 @@ function initJobMap(jobId){
   // Map click handler for drawing
   _map.on('click', onMapClick);
   _map.on('dblclick', onMapDblClick);
+  // Refresh snap markers after zoom (debounced — avoids recreating markers on every zoom event)
+  _map.on('zoomend',()=>{ if(_drawingMode==='polygon'){ clearTimeout(_snapZoomTimer); _snapZoomTimer=setTimeout(refreshSnapMarkers,150); } });
   refreshSnapMarkers();
   updatePaddockSummary();
 }
@@ -1192,7 +1196,7 @@ function clearMapLayers(jobId){
   _drawnLayers=[];
   if(_polyPreview){_map.removeLayer(_polyPreview);_polyPreview=null;}
   if(_polyHaLabel){_map.removeLayer(_polyHaLabel);_polyHaLabel=null;}
-  _polyPoints=[];
+  _polyPoints=[]; _hoveredSnap=null;
   clearSnapMarkers();
   updatePaddockSummary();
 }
