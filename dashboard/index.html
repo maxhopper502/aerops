@@ -968,7 +968,7 @@ function initJobMap(jobId){
   _map.on('click', onMapClick);
   _map.on('dblclick', onMapDblClick);
   // Refresh snap markers after zoom (debounced — avoids recreating markers on every zoom event)
-  _map.on('zoomend',()=>{ if(_drawingMode==='polygon'){ clearTimeout(_snapZoomTimer); _snapZoomTimer=setTimeout(refreshSnapMarkers,150); } });
+  _map.on('zoomend',()=>{ if(_drawingMode==='polygon'){ clearTimeout(_snapZoomTimer); _snapZoomTimer=setTimeout(refreshSnapMarkers,300); } });
   refreshSnapMarkers();
   updatePaddockSummary();
 }
@@ -987,6 +987,7 @@ function setDefaultView(job){
 
 // ── Snap helpers ──────────────────────────────────────────────
 function getSnapTarget(latlng){
+  if(!_map) return null;
   const THRESHOLD = 20 / Math.pow(2, _map.getZoom()); // ~20px in map units
   let best=null, bestD=THRESHOLD;
   _drawnLayers.forEach(item=>{
@@ -1008,6 +1009,7 @@ function getSnapTarget(latlng){
 }
 
 function refreshSnapMarkers(){
+  if(!_map) return;
   clearSnapMarkers();
   if(_drawingMode!=='polygon') return;
   const THRESHOLD=20/Math.pow(2,_map.getZoom());
@@ -1040,6 +1042,7 @@ function refreshSnapMarkers(){
 }
 
 function clearSnapMarkers(){
+  if(!_map) return;
   _snapMarkers.forEach(m=>{try{_map.removeLayer(m);}catch(e){}});
   _snapMarkers=[];
 }

@@ -297,6 +297,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div id="total-ha-display" style="font-size:.8rem;font-weight:700;color:var(--navy);text-align:right;margin-top:4px"></div>
     <button class="add-row-btn" onclick="addPaddock()">+ Add Paddock</button>
+
+    <!-- Client map drawing -->
+    <div style="margin-top:14px">
+      <div style="font-size:.8rem;font-weight:800;color:var(--navy);margin-bottom:6px">&#128205; Draw Paddocks on Map</div>
+      <div id="cf-map-wrap" style="height:220px;border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-bottom:6px;position:relative">
+        <div id="cf-map" style="height:100%;width:100%"></div>
+        <div id="cf-hint" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:600;pointer-events:none;white-space:nowrap">Tap "Draw" to start plotting paddocks</div>
+        <div id="cf-name-modal" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#fff;border-radius:12px;padding:14px 16px;width:280px;z-index:1000;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">
+          <div style="font-size:.85rem;font-weight:800;color:var(--navy);margin-bottom:10px">Name this paddock</div>
+          <div id="cf-modal-ha" style="font-size:.75rem;color:#6b7280;margin-bottom:8px"></div>
+          <input type="text" id="cf-name-input" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;margin-bottom:10px;box-sizing:border-box" placeholder="e.g. North Paddock"/>
+          <div style="display:flex;gap:8px">
+            <button onclick="cfCancel()" style="flex:1;padding:8px;border-radius:8px;background:#f3f4f6;color:#374151;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #d1d5db">Cancel</button>
+            <button onclick="cfConfirm()" style="flex:1;padding:8px;border-radius:8px;background:var(--navy);color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;border:none">Add</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button onclick="cfDrawMode()" id="cf-btn-draw" style="padding:7px 12px;border:2px solid var(--border);border-radius:8px;background:#fff;font-size:.78rem;font-weight:700;cursor:pointer">&#128388; Draw Paddock</button>
+        <button onclick="cfClearAll()" style="padding:7px 12px;border:2px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:.78rem;font-weight:700;cursor:pointer">&#128465; Clear All</button>
+        <div id="cf-ha-summary" style="margin-left:auto;font-size:.78rem;font-weight:700;color:var(--navy)"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -881,6 +904,8 @@ function toFSDoc(data){
     name:sv(p.name), type:sv(p.type), rate:nv(p.rate), unit:sv(p.unit), totalQty:nv(p.totalQty)
   }));
   return {fields:{
+    // Include drawn map GeoJSON
+    const cfGeo = _cfLayers.length>0 ? cfGetGeoJSON() : '';
     base:         sv($('base').value),
       clientName:sv(data.clientName), agentName:sv(data.agentName||''),
     subName:sv(data.subName), subEmail:sv(data.subEmail), subMobile:sv(data.subMobile),
@@ -908,6 +933,161 @@ function toFSDoc(data){
 }
 
 /* ── Submit ── */
+/* ── Client Map Drawing ─────────────────────────────── */
+let _cfMap=null,_cfDrawMode=false,_cfPoints=[],_cfPreview=null,_cfLayers=[];
+
+function cfGetCoords(){
+  const as=document.getElementById('airstrip')?.value||'';
+  const COORDS={'Cummins':{lat:-34.27,lon:135.72},"Trelour's":{lat:-34.10,lon:135.55},"Smithy's":{lat:-34.15,lon:135.60},'Karkoo':{lat:-33.95,lon:135.45},'Heymans':{lat:-34.30,lon:135.80},"Rob Mac's":{lat:-34.20,lon:135.65},"Fitzy's":{lat:-34.05,lon:135.70},'Modras':{lat:-34.35,lon:135.50}};
+  return COORDS[as]||{lat:-34.2,lon:135.7};
+}
+
+function cfInitMap(){
+  const el=document.getElementById('cf-map-inner');
+  if(!el||_cfMap) return;
+  const c=cfGetCoords();
+  _cfMap=L.map('cf-map-inner',{zoomControl:true,preferCanvas:true}).setView([c.lat,c.lon],14);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(_cfMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:.8}).addTo(_cfMap);
+  // Load existing GeoJSON if any
+  const geoData=document.getElementById('cf-geojson')?.value;
+  if(geoData){ try{var fc=JSON.parse(geoData);L.geoJSON(fc,{style:{color:'#22c55e',weight:2,fillColor:'#bbf7d0',fillOpacity:.3},onEachFeature:function(f,l){if(f.properties.name) l.bindTooltip(f.properties.name+' '+f.properties.ha+'ha',{permanent:true,direction:'center'});_cfLayers.push({type:'polygon',layer:l,name:f.properties.name||'',ha:f.properties.ha||0});}}).addTo(_cfMap);updateCfSummary();}catch(e){}}
+  _cfMap.on('click',cfOnClick);
+  _cfMap.on('dblclick',function(e){L.DomEvent.stop(e);if(_cfDrawMode) cfFinishPolygon();});
+}
+
+function cfDrawMode(){
+  _cfDrawMode=!_cfDrawMode;
+  const btn=document.getElementById('cf-btn-draw');
+  const hint=document.getElementById('cf-hint');
+  if(_cfDrawMode){_cfPoints=[];btn.style.background='#dbeafe';btn.style.borderColor='#3b82f6';hint.textContent='Tap corners on the map. Double-tap to finish.';_cfMap.getContainer().style.cursor='crosshair';}
+  else{btn.style.background='';btn.style.borderColor='';hint.textContent='Tap "Draw" to start';_cfMap.getContainer().style.cursor='';if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}_cfPoints=[];}
+}
+
+function cfOnClick(e){
+  if(!_cfDrawMode) return;
+  _cfPoints.push(e.latlng);
+  if(_cfPoints.length===1){
+    document.getElementById('cf-hint').textContent='1 corner placed — keep tapping more';
+  } else {
+    document.getElementById('cf-hint').textContent=_cfPoints.length+' corners — double-tap to finish';
+  }
+  cfUpdatePreview();
+}
+
+function cfUpdatePreview(){
+  if(_cfPreview) _cfMap.removeLayer(_cfPreview);
+  if(_cfPoints.length>1){
+    _cfPreview=L.polyline(_cfPoints,{color:'#3b82f6',weight:2,dashArray:'5 5'}).addTo(_cfMap);
+  }
+  if(_cfPoints.length>=3){
+    const ha=cfCalcHa(_cfPoints);
+    const mid=_cfPoints.reduce(function(s,p){return L.latLng(s.lat+p.lat,s.lng+p.lng);},L.latLng(0,0));
+    mid.lat/=_cfPoints.length;mid.lng/=_cfPoints.length;
+    if(!window._cfHaLabel) window._cfHaLabel=L.polygon(_cfPoints,{color:'transparent',fillColor:'transparent',fillOpacity:0,interactive:false}).addTo(_cfMap);
+    window._cfHaLabel.bindTooltip('<div style="background:rgba(30,64,175,.88);color:#fff;padding:3px 8px;border-radius:5px;font-size:.75rem;font-weight:700">'+ha.toFixed(2)+' ha</div>',{permanent:true,direction:'center',className:''});
+  }
+}
+
+function cfCalcHa(pts){
+  var area=0;var R=6371000;
+  for(var i=0,j=pts.length-1;i<pts.length;j=i++){
+    var xi=pts[i].lng*Math.PI/180*Math.cos(pts[i].lat*Math.PI/180)*R;
+    var yi=pts[i].lat*Math.PI/180*R;
+    var xj=pts[j].lng*Math.PI/180*Math.cos(pts[j].lat*Math.PI/180)*R;
+    var yj=pts[j].lat*Math.PI/180*R;
+    area+=xi*yj-xj*yi;
+  }
+  return Math.abs(area/2)/10000;
+}
+
+function cfFinishPolygon(){
+  if(_cfPoints.length<3){alert('Need at least 3 corners.');return;}
+  var ha=cfCalcHa(_cfPoints);
+  var num=(_cfLayers.filter(function(l){return l.type==='polygon';}).length)+1;
+  var inp=document.getElementById('cf-name-input');
+  var modal=document.getElementById('cf-name-modal');
+  document.getElementById('cf-modal-ha').textContent='Area: '+ha.toFixed(2)+' ha';
+  inp.value='Paddock '+num;
+  inp.dataset.pendingHa=ha;
+  modal.style.display='block';inp.focus();inp.select();
+  _cfDrawMode=false;
+  document.getElementById('cf-btn-draw').style.background='';
+  document.getElementById('cf-btn-draw').style.borderColor='';
+  document.getElementById('cf-hint').textContent='Tap "Draw" to start';
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+}
+
+function cfConfirm(){
+  var inp=document.getElementById('cf-name-input');
+  var ha=parseFloat(inp.dataset.pendingHa)||0;
+  var name=inp.value.trim()||('Paddock '+(_cfLayers.length+1));
+  document.getElementById('cf-name-modal').style.display='none';
+  var poly=L.polygon(_cfPoints,{color:'#22c55e',weight:2.5,fillColor:'#bbf7d0',fillOpacity:.35}).addTo(_cfMap);
+  poly.bindTooltip('<div style="background:rgba(30,64,175,.88);color:#fff;padding:3px 8px;border-radius:5px;font-size:.75rem;font-weight:700">'+name+'<br>'+ha.toFixed(2)+' ha</div>',{permanent:true,direction:'center',className:''});
+  _cfLayers.push({type:'polygon',layer:poly,name:name,ha:ha});
+  _cfPoints=[];
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  updateCfSummary();
+  // Also add to paddock table if named
+  if(name && ha>0) cfAddToTable(name,ha);
+}
+
+function cfCancel(){
+  document.getElementById('cf-name-modal').style.display='none';
+  _cfPoints=[];
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  _cfDrawMode=false;
+  document.getElementById('cf-btn-draw').style.background='';
+  document.getElementById('cf-btn-draw').style.borderColor='';
+  document.getElementById('cf-hint').textContent='Tap "Draw" to start';
+  _cfMap.getContainer().style.cursor='';
+}
+
+function cfClearAll(){
+  if(!confirm('Clear all drawn paddocks?')) return;
+  _cfLayers.forEach(function(l){try{_cfMap.removeLayer(l.layer);}catch(e){}});
+  _cfLayers=[];
+  _cfPoints=[];
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  updateCfSummary();
+}
+
+function updateCfSummary(){
+  var total=(_cfLayers.filter(function(l){return l.type==='polygon';}).reduce(function(s,l){return s+(l.ha||0);},0)).toFixed(2);
+  var cnt=_cfLayers.filter(function(l){return l.type==='polygon';}).length;
+  var el=document.getElementById('cf-ha-summary');
+  if(el){el.textContent=cnt>0?'Total drawn: '+total+' ha across '+cnt+' paddock'+(cnt!==1?'s':''):'';}
+  // Auto-fill table ha
+  var haEl=document.getElementById('total-ha-display');
+  if(haEl) haEl.textContent=total>0?'Total: '+total+' ha':'';
+}
+
+function cfAddToTable(name,ha){
+  // Add a paddock row to the table with pre-filled name and ha
+  addPaddock();
+  var rows=document.querySelectorAll('#paddock-rows tr');
+  var last=rows[rows.length-1];
+  var nameInp=last.querySelector('input[name="pd_name[]"]');
+  var haInp=last.querySelector('input[name="pd_ha[]"]');
+  if(nameInp) nameInp.value=name;
+  if(haInp) haInp.value=ha.toFixed(2);
+}
+
+function cfGetGeoJSON(){
+  var features=_cfLayers.filter(function(l){return l.type==='polygon';}).map(function(l){
+    var coords=l.layer.getLatLngs()[0].map(function(p){return [p.lng,p.lat];});
+    coords.push(coords[0]);
+    return {type:'Feature',geometry:{type:'Polygon',coordinates:[coords]},properties:{name:l.name,ha:l.ha}};
+  });
+  return JSON.stringify({type:'FeatureCollection',features:features});
+}
+
+// Hook into form submit to include GeoJSON
+var _origSubmit = null;
+
 async function submitForm(){
   const btn = $('btn-next');
   btn.disabled = true;
