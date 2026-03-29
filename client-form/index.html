@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#1a3a5c"/>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <title>Aerotech — Aerial Application Request</title>
@@ -111,6 +110,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ── Spinner ── */
 .spin{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Pure CSS radio-button toggle groups */
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-btn{
+  flex:1;min-width:80px;padding:11px 8px;border:2px solid #d1d5db;border-radius:10px;
+  background:#fff;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;
+  color:#6b7280;transition:all .15s;user-select:none;-webkit-user-select:none;
+  display:flex;align-items:center;justify-content:center
+}
+.radio-btn.selected{
+  border-color:#1a3a5c;background:#1a3a5c;color:#fff;box-shadow:0 2px 6px rgba(26,58,92,.25)
+}
+.radio-btn:active{transform:scale(.97)}
+
 </style>
 </head>
 <body>
@@ -182,15 +195,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg">
       <label>Do you have an Agronomy Recommendation?</label>
       <div class="yn-row">
-        <button class="yn-btn" onclick="yn('hasRec','yes',this)" data-field="hasRec" data-val="yes">✅ Yes</button>
-        <button class="yn-btn" onclick="yn('hasRec','no',this)" data-field="hasRec" data-val="no">No</button>
+        <button class="yn-btn" onclick="selRadio(this,'hasRec','yes')" data-field="hasRec" data-val="yes">✅ Yes</button>
+        <button class="yn-btn" onclick="selRadio(this,'hasRec','no')" data-field="hasRec" data-val="no">No</button>
       </div>
     </div>
     <div class="fg">
       <label>Who is being invoiced? <span style="color:#6b7280;font-weight:400">(optional)</span></label>
-      <div class="yn-row">
-        <button class="yn-btn" onclick="yn('invoiceTo','Client',this)" data-field="invoiceTo" data-val="Client">Client</button>
-        <button class="yn-btn" onclick="yn('invoiceTo','Agent',this)" data-field="invoiceTo" data-val="Agent">Agent</button>
+      <div class="radio-group" id="rg-invoiceTo">
+        <label class="radio-btn" onclick="selRadio(this,'invoiceTo','Client')">
+          <input type="radio" name="invoiceTo" value="Client" style="display:none">
+          <span>Client</span>
+        </label>
+        <label class="radio-btn" onclick="selRadio(this,'invoiceTo','Agent')">
+          <input type="radio" name="invoiceTo" value="Agent" style="display:none">
+          <span>Agent</span>
+        </label>
       </div>
     </div>
     <div class="fg" id="f-invoiceEmail">
@@ -233,9 +252,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="fg">
       <label>Application Type</label>
-      <div class="yn-row">
-        <button class="yn-btn" onclick="yn('appType','Spray',this)" style="flex:1;padding:14px;border:2px solid var(--navy);border-radius:10px;background:#e8eef5;font-size:.95rem;font-weight:700;cursor:pointer;color:var(--navy)">💧 Spraying</button>
-        <button class="yn-btn" onclick="yn('appType','Spread',this)" style="flex:1;padding:14px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.95rem;font-weight:700;cursor:pointer;color:var(--muted)">🌾 Spreading</button>
+      <div class="radio-group" id="rg-appType">
+        <label class="radio-btn selected" onclick="selRadio(this,'appType','Spray')" style="flex:1;padding:14px 8px">
+          <input type="radio" name="appType" value="Spray" style="display:none" checked>
+          <span>💧 Spraying</span>
+        </label>
+        <label class="radio-btn" onclick="selRadio(this,'appType','Spread')" style="flex:1;padding:14px 8px">
+          <input type="radio" name="appType" value="Spread" style="display:none">
+          <span>🌾 Spreading</span>
+        </label>
       </div>
     </div>
     <!-- Spray sub-type -->
@@ -531,7 +556,7 @@ const EJS_SVC_ID   = '';          // e.g. 'service_abc123'
 const EJS_CLIENT_T = '';          // Client confirmation template ID
 const EJS_OFFICE_T = '';          // Office alert template ID (optional)
 const EJS_OFFICE_EMAIL = 'admin@aerotechaviation.com.au';
-if(EJS_PUB_KEY) emailjs.init({publicKey: EJS_PUB_KEY});
+if(EJS_PUB_KEY && window.emailjs) emailjs.init({publicKey: EJS_PUB_KEY});
 
 /* ── Map file upload state ── */
 let mapFileUrl = null;
@@ -613,6 +638,27 @@ const SEL_STYLE   = 'flex:1;padding:11px 8px;border:2px solid #1a3a5c;border-rad
 const UNSEL_STYLE = 'flex:1;padding:11px 8px;border:2px solid #d1d5db;border-radius:10px;background:#fff;font-size:.9rem;font-weight:600;cursor:pointer;text-align:center;color:#6b7280;box-shadow:none';
 
 
+/* Pure CSS radio selection - no JS styling needed */
+function selRadio(lbl, field, val){
+  // Update ynVals for validation
+  ynVals[field] = val;
+  // Pure CSS: toggle .selected class on the label's parent group
+  try {
+    var group = lbl.closest('.radio-group');
+    if(group) {
+      var btns = group.querySelectorAll('.radio-btn');
+      btns.forEach(function(b){ b.classList.remove('selected'); b.style.cssText = ''; });
+    }
+    lbl.classList.add('selected');
+    // Also check the hidden radio
+    var radio = lbl.querySelector('input[type=radio]');
+    if(radio) radio.checked = true;
+  } catch(e){}
+  // For appType, also trigger the panel switch
+  if(field==='appType'){ try { applyAppType(val); } catch(e2){} }
+}
+
+// Legacy yn() - just redirect to selRadio for backward compat
 function yn(field, val, btn){
   ynVals[field] = val;
   try {
@@ -1206,11 +1252,11 @@ async function submitForm(){
         product_list:products.map(p=>p.name+' '+p.rate+' '+p.unit).join(', '), summary_text:summary,
         map_url:mapFileUrl||'', map_filename:mapFileName||'No map attached'};
       // Client confirmation
-      if(data.subEmail) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:data.subEmail}).catch(()=>{});
+      if(data.subEmail && window.emailjs) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:data.subEmail}).catch(function(){});
       // Extra notify recipients
       allNotify.slice(1).forEach(e=>{ if(e) emailjs.send(EJS_SVC_ID, EJS_CLIENT_T, {...ejsBase, to_email:e}).catch(()=>{}); });
       // Office alert
-      if(EJS_OFFICE_T) emailjs.send(EJS_SVC_ID, EJS_OFFICE_T, {...ejsBase, to_email:EJS_OFFICE_EMAIL}).catch(()=>{});
+      if(EJS_OFFICE_T && window.emailjs) emailjs.send(EJS_SVC_ID, EJS_OFFICE_T, {...ejsBase, to_email:EJS_OFFICE_EMAIL}).catch(function(){});
     } else {
       // Fallback: open mailto on client's device so they can forward their summary
       if(data.subEmail){
