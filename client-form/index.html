@@ -61,6 +61,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .yn-btn.sel-yes{border-color:var(--green);color:var(--green);background:#f0fdf4}
 .yn-btn.sel-no{border-color:var(--red);color:var(--red);background:#fef2f2}
 .yn-btn.sel-yes-neutral{border-color:var(--navy);color:var(--navy);background:#f0f4f8}
+.yn-btn.btn-sel{background:#1a3a5c!important;color:#fff!important;border-color:#1a3a5c!important;box-shadow:0 2px 6px rgba(26,58,92,.3)!important}
 
 /* ── Paddock / Product rows ── */
 .row-table{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -186,7 +187,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="fg">
-      <label>Who is being invoiced? <span class="req">*</span></label>
+      <label>Who is being invoiced? <span style="color:#6b7280;font-weight:400">(optional)</span></label>
       <div class="yn-row">
         <button class="yn-btn" onclick="yn('invoiceTo','Client',this)" data-field="invoiceTo" data-val="Client">Client</button>
         <button class="yn-btn" onclick="yn('invoiceTo','Agent',this)" data-field="invoiceTo" data-val="Agent">Agent</button>
@@ -608,16 +609,18 @@ function showClientMap(data){
 }
 
 /* ── Yes/No toggle ── */
-const SEL_STYLE   = 'flex:1;padding:11px;border:2px solid var(--navy);border-radius:10px;background:#e8eef5;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;color:var(--navy)';
-const UNSEL_STYLE = 'flex:1;padding:11px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.9rem;font-weight:600;cursor:pointer;text-align:center;color:var(--muted)';
+const SEL_STYLE   = 'flex:1;padding:11px 8px;border:2px solid #1a3a5c;border-radius:10px;background:#1a3a5c;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;box-shadow:0 2px 6px rgba(26,58,92,.25)';
+const UNSEL_STYLE = 'flex:1;padding:11px 8px;border:2px solid #d1d5db;border-radius:10px;background:#fff;font-size:.9rem;font-weight:600;cursor:pointer;text-align:center;color:#6b7280;box-shadow:none';
+
 
 function yn(field, val, btn){
   ynVals[field] = val;
   try {
     var c = btn.closest('.yn-row');
     if(!c) c = btn.closest('.fg') || btn.parentElement;
-    if(c && c.querySelectorAll) c.querySelectorAll('.yn-btn').forEach(function(b){ b.style.cssText = UNSEL_STYLE; });
+    if(c && c.querySelectorAll) c.querySelectorAll('.yn-btn').forEach(function(b){ b.classList.remove('btn-sel'); b.style.cssText = UNSEL_STYLE; });
   } catch(e){}
+  btn.classList.add('btn-sel');
   btn.style.cssText = SEL_STYLE;
   if(field==='appType'){ try { applyAppType(val); } catch(e2){} }
 }
