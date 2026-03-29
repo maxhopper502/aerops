@@ -6,7 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#1a3a5c"/>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<title>Aerotech – Aerial Application Request</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <title>Aerotech — Aerial Application Request</title>
 <link rel="apple-touch-icon" href="./icon-512.png"/>
 <link rel="icon" type="image/png" href="./icon-512.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -50,6 +52,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .fg textarea{resize:vertical;min-height:80px}
 .fg select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.yn-row{display:flex;gap:8px;flex-wrap:wrap}
 .req{color:var(--red)}
 
 /* ── Radio / Yes-No ── */
@@ -123,7 +126,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 1 — Contact & Client Info            -->
+<!-- STEP 1 - Contact & Client Info            -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step active" id="s1">
   <div class="step-dots">
@@ -136,7 +139,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg" id="f-base">
       <label>📍 Aerotech Base / Region <span class="req">*</span></label>
       <select id="base" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;font-weight:600;color:var(--navy)">
-        <option value="">— Select your region —</option>
+        <option value="">- Select your region -</option>
         <option value="Eyre Peninsula">Eyre Peninsula</option>
         <option value="Yorke Peninsula">Yorke Peninsula</option>
         <option value="Mid North">Mid North</option>
@@ -190,9 +193,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="fg" id="f-invoiceEmail">
-      <label>Invoice Email <span class="req">*</span></label>
+      <label>Invoice Email <span style="font-weight:400;font-size:.7rem">(optional)</span></label>
       <input type="email" id="invoiceEmail" placeholder="accounts@example.com"/>
-      <div class="err-msg" id="e-invoiceEmail">Please enter invoice email</div>
+      <div class="err-msg" id="e-invoiceEmail">Please enter a valid email address</div>
     </div>
     <div class="fg">
       <label>Chemical / Product Delivery</label>
@@ -207,7 +210,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 2 — Farm & Job Details               -->
+<!-- STEP 2 - Farm & Job Details               -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s2">
   <div class="step-dots">
@@ -295,11 +298,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div id="total-ha-display" style="font-size:.8rem;font-weight:700;color:var(--navy);text-align:right;margin-top:4px"></div>
     <button class="add-row-btn" onclick="addPaddock()">+ Add Paddock</button>
+
+    <!-- Client map drawing -->
+    <div style="margin-top:14px">
+      <div style="font-size:.8rem;font-weight:800;color:var(--navy);margin-bottom:6px">&#128205; Draw Paddocks on Map</div>
+      <div id="cf-map-wrap" style="height:220px;border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-bottom:6px;position:relative">
+        <div id="cf-map" style="height:100%;width:100%"></div>
+        <div id="cf-hint" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:600;pointer-events:none;white-space:nowrap">Tap "Draw" to start plotting paddocks</div>
+        <div id="cf-name-modal" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#fff;border-radius:12px;padding:14px 16px;width:280px;z-index:1000;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">
+          <div style="font-size:.85rem;font-weight:800;color:var(--navy);margin-bottom:10px">Name this paddock</div>
+          <div id="cf-modal-ha" style="font-size:.75rem;color:#6b7280;margin-bottom:8px"></div>
+          <input type="text" id="cf-name-input" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;margin-bottom:10px;box-sizing:border-box" placeholder="e.g. North Paddock"/>
+          <div style="display:flex;gap:8px">
+            <button onclick="cfCancel()" style="flex:1;padding:8px;border-radius:8px;background:#f3f4f6;color:#374151;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #d1d5db">Cancel</button>
+            <button onclick="cfConfirm()" style="flex:1;padding:8px;border-radius:8px;background:var(--navy);color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;border:none">Add</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button onclick="cfDrawMode()" id="cf-btn-draw" style="padding:7px 12px;border:2px solid var(--border);border-radius:8px;background:#fff;font-size:.78rem;font-weight:700;cursor:pointer">&#128388; Draw Paddock</button>
+        <button onclick="cfClearAll()" style="padding:7px 12px;border:2px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:.78rem;font-weight:700;cursor:pointer">&#128465; Clear All</button>
+        <div id="cf-ha-summary" style="margin-left:auto;font-size:.78rem;font-weight:700;color:var(--navy)"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 3 — Products                         -->
+<!-- STEP 3 - Products                         -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s3">
   <div class="step-dots">
@@ -327,7 +353,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 4 — Hazards & Safety                 -->
+<!-- STEP 4 - Hazards & Safety                 -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s4">
   <div class="step-dots">
@@ -400,12 +426,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg">
       <label>Map provided?</label>
       <div class="yn-row">
-        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes — upload below</button>
-        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No — I'll send later</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','yes',this)">✅ Yes - upload below</button>
+        <button class="yn-btn" onclick="ynHaz('mapProvided','no',this)">No - I'll send later</button>
       </div>
-      <!-- File upload area — shown always so client can attach regardless of yes/no -->
+      <!-- File upload area - shown always so client can attach regardless of yes/no -->
       <div style="margin-top:12px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">ATTACH MAP / RECOMMENDATION (PDF, JPG, PNG — max 10MB)</label>
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">ATTACH MAP / RECOMMENDATION (PDF, JPG, PNG - max 10MB)</label>
         <div id="map-drop-zone" style="border:2.5px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-top:6px" onclick="document.getElementById('map-file-input').click()">
           <div style="font-size:2rem;margin-bottom:6px">📎</div>
           <div style="font-size:.83rem;font-weight:700;color:var(--navy)">Tap to attach file</div>
@@ -423,7 +449,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- STEP 5 — Review & Submit                  -->
+<!-- STEP 5 - Review & Submit                  -->
 <!-- ══════════════════════════════════════════ -->
 <div class="step" id="s5">
   <div class="step-dots">
@@ -465,9 +491,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <p>Your aerial application request has been sent to the Aerotech team. We'll be in touch to confirm your booking.</p>
     <div class="ref-box">
       <div class="ref-label">Reference Number</div>
-      <div class="ref-val" id="ref-num">—</div>
+      <div class="ref-val" id="ref-num">-</div>
     </div>
     <p id="done-email-note" style="margin-top:16px;font-size:.82rem;color:#065f46;font-weight:600">📧 A confirmation email has been sent to you with all the job details.</p>
+    <!-- Map preview of submitted paddocks -->
+    <div id="client-map-wrap" style="display:none;margin-top:16px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">📍 Paddock Map</div>
+      <div id="client-map" style="height:260px;border-radius:10px;overflow:hidden;border:2px solid var(--border)"></div>
+    </div>
     <div style="background:#f0fdf4;border-radius:10px;padding:14px;margin-top:16px;font-size:.78rem;color:#374151;text-align:left">
       <strong>What happens next?</strong><br/>
       Our operations team will review your request and contact you within 1 business day to confirm scheduling, weather windows, and any additional requirements.
@@ -513,7 +544,7 @@ const TOTAL = 5;
 /* ── Map file upload handler ── */
 async function handleMapFile(input){
   const file = input.files[0]; if(!file) return;
-  if(file.size > 10*1024*1024){ alert('File too large — maximum 10MB'); input.value=''; return; }
+  if(file.size > 10*1024*1024){ alert('File too large - maximum 10MB'); input.value=''; return; }
   const statusEl = document.getElementById('map-file-status');
   const dropZone = document.getElementById('map-drop-zone');
   statusEl.style.display='block';
@@ -534,7 +565,7 @@ async function handleMapFile(input){
     dropZone.innerHTML='<div style="font-size:1.5rem">📎</div><div style="font-size:.83rem;font-weight:700;color:#16a34a">'+file.name+'</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px">Tap to replace</div>';
   }catch(e){
     console.warn('Map upload error:',e);
-    statusEl.innerHTML='<span style="color:#dc2626">⚠️ Upload failed — map will need to be emailed. ('+e.message+')</span>';
+    statusEl.innerHTML='<span style="color:#dc2626">⚠️ Upload failed - map will need to be emailed. ('+e.message+')</span>';
     dropZone.style.borderColor='#dc2626';
     mapFileUrl = null;
   }
@@ -546,17 +577,49 @@ const ynVals  = {};
 function $(id){ return document.getElementById(id); }
 function go(id){ document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); window.scrollTo(0,0); }
 
+const ESRI_SAT_C='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const ESRI_LBL_C='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const AIRSTRIP_COORDS={
+  'Cummins':{lat:-34.27,lon:135.72},'Trelour\'s':{lat:-34.10,lon:135.55},
+  'Smithy\'s':{lat:-34.15,lon:135.60},'Karkoo':{lat:-33.95,lon:135.45},
+  'Heymans':{lat:-34.30,lon:135.80},'Rob Mac\'s':{lat:-34.20,lon:135.65},
+  'Fitzy\'s':{lat:-34.05,lon:135.70},'Modras':{lat:-34.35,lon:135.50}
+};
+
+function showClientMap(data){
+  const wrap=document.getElementById('client-map-wrap');
+  const mapEl=document.getElementById('client-map');
+  if(!wrap||!mapEl) return;
+  wrap.style.display='block';
+  if(mapEl._leaflet_map) mapEl._leaflet_map.remove();
+  const c=(AIRSTRIP_COORDS[data.airstrip]||{lat:-34.2,lon:135.7});
+  const map=L.map('client-map',{zoomControl:true}).setView([c.lat,c.lon],14);
+  L.tileLayer(ESRI_SAT_C,{maxZoom:19}).addTo(map);
+  L.tileLayer(ESRI_LBL_C,{maxZoom:19,opacity:.8}).addTo(map);
+  mapEl._leaflet_map=map;
+  L.marker([c.lat,c.lon],{
+    icon:L.divIcon({html:'<div style="font-size:22px">✈️</div>',className:'',iconAnchor:[11,22],iconSize:[22,22]})
+  }).bindPopup('<b>'+(data.airstrip||'Farm')+'</b><br>'+(data.farmAddress||'')).addTo(map);
+  const pads=data.paddocks||[];
+  if(pads.length){
+    const list=pads.map(p=>'<li><b>'+(p.name||'Paddock')+'</b>: '+(p.ha||0)+' ha'+(p.cropType?' ('+p.cropType+')':'')+'</li>').join('');
+    L.popup().setLatLng([c.lat,c.lon]).setContent('<b>Paddocks:</b><ul style="margin:4px 0;padding-left:18px">'+list+'</ul>').openOn(map);
+  }
+}
+
 /* ── Yes/No toggle ── */
 const SEL_STYLE   = 'flex:1;padding:11px;border:2px solid var(--navy);border-radius:10px;background:#e8eef5;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;color:var(--navy)';
 const UNSEL_STYLE = 'flex:1;padding:11px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:.9rem;font-weight:600;cursor:pointer;text-align:center;color:var(--muted)';
 
 function yn(field, val, btn){
   ynVals[field] = val;
-  const row = btn.closest('.yn-row');
-  row.querySelectorAll('.yn-btn').forEach(b=>{ b.style.cssText=UNSEL_STYLE; });
+  try {
+    var c = btn.closest('.yn-row');
+    if(!c) c = btn.closest('.fg') || btn.parentElement;
+    if(c && c.querySelectorAll) c.querySelectorAll('.yn-btn').forEach(function(b){ b.style.cssText = UNSEL_STYLE; });
+  } catch(e){}
   btn.style.cssText = SEL_STYLE;
-  // Special handling for appType toggle
-  if(field==='appType') applyAppType(val);
+  if(field==='appType'){ try { applyAppType(val); } catch(e2){} }
 }
 
 function applyAppType(type){
@@ -634,7 +697,7 @@ function addPaddock(){
   tr.innerHTML =
     '<td><input type="text" placeholder="Paddock name" id="pd-name-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem"/></td>'+
     '<td><input type="number" placeholder="0" min="0" step="0.1" id="pd-ha-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem" oninput="calcTotalHa()"/></td>'+
-    '<td><select id="pd-crop-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;background:#fff"><option value="">— Crop —</option>'+CROPS.map(c=>'<option>'+c+'</option>').join('')+'</select></td>';
+    '<td><select id="pd-crop-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;background:#fff"><option value="">- Crop -</option>'+CROPS.map(c=>'<option>'+c+'</option>').join('')+'</select></td>';
   tbody.appendChild(tr);
   calcTotalHa();
 }
@@ -665,7 +728,7 @@ function addProduct(){
   const tr = document.createElement('tr');
   tr.innerHTML =
     '<td><input type="text" placeholder="Product name" id="pr-name-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem"/></td>'+
-    '<td><select id="pr-type-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff"><option value="">— Type —</option>'+PTYPES.map(t=>'<option>'+t+'</option>').join('')+'</select></td>'+
+    '<td><select id="pr-type-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff"><option value="">- Type -</option>'+PTYPES.map(t=>'<option>'+t+'</option>').join('')+'</select></td>'+
     '<td><input type="number" placeholder="0" step="0.01" min="0" id="pr-rate-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem" oninput="calcProductTotal('+i+')"/></td>'+
     '<td><select id="pr-unit-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:#fff">'+units+'</select></td>'+
     '<td><input type="number" placeholder="auto" step="0.1" min="0" id="pr-total-'+i+'" style="width:100%;padding:8px;border:1.5px solid #bfdbfe;border-radius:8px;font-size:.82rem;background:#eff6ff;color:#1e40af;font-weight:700" tabindex="-1"/></td>';
@@ -747,7 +810,11 @@ function validate(step){
     req('subName','e-subName');
     req('subMobile','e-subMobile');
     req('subEmail','e-subEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
-    req('invoiceEmail','e-invoiceEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
+    // invoiceEmail is optional — only validate format if a value is entered
+    const invEl=$('invoiceEmail');
+    if(invEl&&invEl.value.trim()&&!/\S+@\S+\.\S+/.test(invEl.value.trim())){
+      $('e-invoiceEmail').classList.add('show'); ok=false;
+    } else if(invEl) { $('e-invoiceEmail').classList.remove('show'); }
   }
   if(step===2){
     req('preferredDate','e-preferredDate');
@@ -795,7 +862,7 @@ function buildReview(){
         Farm: ${$('farmAddress').value}<br>
         ${$('airstrip').value?'Airstrip: '+$('airstrip').value+'<br>':''}
         Paddocks: <strong>${paddocks.length}</strong> (${totalHa.toFixed(1)} ha total)<br>
-        ${paddocks.slice(0,3).map(p=>p.name+' — '+p.ha+' ha').join(', ')}${paddocks.length>3?' + more':''}
+        ${paddocks.slice(0,3).map(p=>p.name+' - '+p.ha+' ha').join(', ')}${paddocks.length>3?' + more':''}
       </div>
     </div>
     <div class="card">
@@ -844,6 +911,8 @@ function toFSDoc(data){
     name:sv(p.name), type:sv(p.type), rate:nv(p.rate), unit:sv(p.unit), totalQty:nv(p.totalQty)
   }));
   return {fields:{
+    // Include drawn map GeoJSON
+    const cfGeo = _cfLayers.length>0 ? cfGetGeoJSON() : '';
     base:         sv($('base').value),
       clientName:sv(data.clientName), agentName:sv(data.agentName||''),
     subName:sv(data.subName), subEmail:sv(data.subEmail), subMobile:sv(data.subMobile),
@@ -871,6 +940,161 @@ function toFSDoc(data){
 }
 
 /* ── Submit ── */
+/* ── Client Map Drawing ─────────────────────────────── */
+let _cfMap=null,_cfDrawMode=false,_cfPoints=[],_cfPreview=null,_cfLayers=[];
+
+function cfGetCoords(){
+  const as=document.getElementById('airstrip')?.value||'';
+  const COORDS={'Cummins':{lat:-34.27,lon:135.72},"Trelour's":{lat:-34.10,lon:135.55},"Smithy's":{lat:-34.15,lon:135.60},'Karkoo':{lat:-33.95,lon:135.45},'Heymans':{lat:-34.30,lon:135.80},"Rob Mac's":{lat:-34.20,lon:135.65},"Fitzy's":{lat:-34.05,lon:135.70},'Modras':{lat:-34.35,lon:135.50}};
+  return COORDS[as]||{lat:-34.2,lon:135.7};
+}
+
+function cfInitMap(){
+  const el=document.getElementById('cf-map-inner');
+  if(!el||_cfMap) return;
+  const c=cfGetCoords();
+  _cfMap=L.map('cf-map-inner',{zoomControl:true,preferCanvas:true}).setView([c.lat,c.lon],14);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(_cfMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:.8}).addTo(_cfMap);
+  // Load existing GeoJSON if any
+  const geoData=document.getElementById('cf-geojson')?.value;
+  if(geoData){ try{var fc=JSON.parse(geoData);L.geoJSON(fc,{style:{color:'#22c55e',weight:2,fillColor:'#bbf7d0',fillOpacity:.3},onEachFeature:function(f,l){if(f.properties.name) l.bindTooltip(f.properties.name+' '+f.properties.ha+'ha',{permanent:true,direction:'center'});_cfLayers.push({type:'polygon',layer:l,name:f.properties.name||'',ha:f.properties.ha||0});}}).addTo(_cfMap);updateCfSummary();}catch(e){}}
+  _cfMap.on('click',cfOnClick);
+  _cfMap.on('dblclick',function(e){L.DomEvent.stop(e);if(_cfDrawMode) cfFinishPolygon();});
+}
+
+function cfDrawMode(){
+  _cfDrawMode=!_cfDrawMode;
+  const btn=document.getElementById('cf-btn-draw');
+  const hint=document.getElementById('cf-hint');
+  if(_cfDrawMode){_cfPoints=[];btn.style.background='#dbeafe';btn.style.borderColor='#3b82f6';hint.textContent='Tap corners on the map. Double-tap to finish.';_cfMap.getContainer().style.cursor='crosshair';}
+  else{btn.style.background='';btn.style.borderColor='';hint.textContent='Tap "Draw" to start';_cfMap.getContainer().style.cursor='';if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}_cfPoints=[];}
+}
+
+function cfOnClick(e){
+  if(!_cfDrawMode) return;
+  _cfPoints.push(e.latlng);
+  if(_cfPoints.length===1){
+    document.getElementById('cf-hint').textContent='1 corner placed — keep tapping more';
+  } else {
+    document.getElementById('cf-hint').textContent=_cfPoints.length+' corners — double-tap to finish';
+  }
+  cfUpdatePreview();
+}
+
+function cfUpdatePreview(){
+  if(_cfPreview) _cfMap.removeLayer(_cfPreview);
+  if(_cfPoints.length>1){
+    _cfPreview=L.polyline(_cfPoints,{color:'#3b82f6',weight:2,dashArray:'5 5'}).addTo(_cfMap);
+  }
+  if(_cfPoints.length>=3){
+    const ha=cfCalcHa(_cfPoints);
+    const mid=_cfPoints.reduce(function(s,p){return L.latLng(s.lat+p.lat,s.lng+p.lng);},L.latLng(0,0));
+    mid.lat/=_cfPoints.length;mid.lng/=_cfPoints.length;
+    if(!window._cfHaLabel) window._cfHaLabel=L.polygon(_cfPoints,{color:'transparent',fillColor:'transparent',fillOpacity:0,interactive:false}).addTo(_cfMap);
+    window._cfHaLabel.bindTooltip('<div style="background:rgba(30,64,175,.88);color:#fff;padding:3px 8px;border-radius:5px;font-size:.75rem;font-weight:700">'+ha.toFixed(2)+' ha</div>',{permanent:true,direction:'center',className:''});
+  }
+}
+
+function cfCalcHa(pts){
+  var area=0;var R=6371000;
+  for(var i=0,j=pts.length-1;i<pts.length;j=i++){
+    var xi=pts[i].lng*Math.PI/180*Math.cos(pts[i].lat*Math.PI/180)*R;
+    var yi=pts[i].lat*Math.PI/180*R;
+    var xj=pts[j].lng*Math.PI/180*Math.cos(pts[j].lat*Math.PI/180)*R;
+    var yj=pts[j].lat*Math.PI/180*R;
+    area+=xi*yj-xj*yi;
+  }
+  return Math.abs(area/2)/10000;
+}
+
+function cfFinishPolygon(){
+  if(_cfPoints.length<3){alert('Need at least 3 corners.');return;}
+  var ha=cfCalcHa(_cfPoints);
+  var num=(_cfLayers.filter(function(l){return l.type==='polygon';}).length)+1;
+  var inp=document.getElementById('cf-name-input');
+  var modal=document.getElementById('cf-name-modal');
+  document.getElementById('cf-modal-ha').textContent='Area: '+ha.toFixed(2)+' ha';
+  inp.value='Paddock '+num;
+  inp.dataset.pendingHa=ha;
+  modal.style.display='block';inp.focus();inp.select();
+  _cfDrawMode=false;
+  document.getElementById('cf-btn-draw').style.background='';
+  document.getElementById('cf-btn-draw').style.borderColor='';
+  document.getElementById('cf-hint').textContent='Tap "Draw" to start';
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+}
+
+function cfConfirm(){
+  var inp=document.getElementById('cf-name-input');
+  var ha=parseFloat(inp.dataset.pendingHa)||0;
+  var name=inp.value.trim()||('Paddock '+(_cfLayers.length+1));
+  document.getElementById('cf-name-modal').style.display='none';
+  var poly=L.polygon(_cfPoints,{color:'#22c55e',weight:2.5,fillColor:'#bbf7d0',fillOpacity:.35}).addTo(_cfMap);
+  poly.bindTooltip('<div style="background:rgba(30,64,175,.88);color:#fff;padding:3px 8px;border-radius:5px;font-size:.75rem;font-weight:700">'+name+'<br>'+ha.toFixed(2)+' ha</div>',{permanent:true,direction:'center',className:''});
+  _cfLayers.push({type:'polygon',layer:poly,name:name,ha:ha});
+  _cfPoints=[];
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  updateCfSummary();
+  // Also add to paddock table if named
+  if(name && ha>0) cfAddToTable(name,ha);
+}
+
+function cfCancel(){
+  document.getElementById('cf-name-modal').style.display='none';
+  _cfPoints=[];
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  _cfDrawMode=false;
+  document.getElementById('cf-btn-draw').style.background='';
+  document.getElementById('cf-btn-draw').style.borderColor='';
+  document.getElementById('cf-hint').textContent='Tap "Draw" to start';
+  _cfMap.getContainer().style.cursor='';
+}
+
+function cfClearAll(){
+  if(!confirm('Clear all drawn paddocks?')) return;
+  _cfLayers.forEach(function(l){try{_cfMap.removeLayer(l.layer);}catch(e){}});
+  _cfLayers=[];
+  _cfPoints=[];
+  if(_cfPreview){_cfMap.removeLayer(_cfPreview);_cfPreview=null;}
+  if(window._cfHaLabel){_cfMap.removeLayer(window._cfHaLabel);window._cfHaLabel=null;}
+  updateCfSummary();
+}
+
+function updateCfSummary(){
+  var total=(_cfLayers.filter(function(l){return l.type==='polygon';}).reduce(function(s,l){return s+(l.ha||0);},0)).toFixed(2);
+  var cnt=_cfLayers.filter(function(l){return l.type==='polygon';}).length;
+  var el=document.getElementById('cf-ha-summary');
+  if(el){el.textContent=cnt>0?'Total drawn: '+total+' ha across '+cnt+' paddock'+(cnt!==1?'s':''):'';}
+  // Auto-fill table ha
+  var haEl=document.getElementById('total-ha-display');
+  if(haEl) haEl.textContent=total>0?'Total: '+total+' ha':'';
+}
+
+function cfAddToTable(name,ha){
+  // Add a paddock row to the table with pre-filled name and ha
+  addPaddock();
+  var rows=document.querySelectorAll('#paddock-rows tr');
+  var last=rows[rows.length-1];
+  var nameInp=last.querySelector('input[name="pd_name[]"]');
+  var haInp=last.querySelector('input[name="pd_ha[]"]');
+  if(nameInp) nameInp.value=name;
+  if(haInp) haInp.value=ha.toFixed(2);
+}
+
+function cfGetGeoJSON(){
+  var features=_cfLayers.filter(function(l){return l.type==='polygon';}).map(function(l){
+    var coords=l.layer.getLatLngs()[0].map(function(p){return [p.lng,p.lat];});
+    coords.push(coords[0]);
+    return {type:'Feature',geometry:{type:'Polygon',coordinates:[coords]},properties:{name:l.name,ha:l.ha}};
+  });
+  return JSON.stringify({type:'FeatureCollection',features:features});
+}
+
+// Hook into form submit to include GeoJSON
+var _origSubmit = null;
+
 async function submitForm(){
   const btn = $('btn-next');
   btn.disabled = true;
@@ -919,17 +1143,17 @@ async function submitForm(){
 
   // Build plain-text job summary for emails / mailto fallback
   function buildSummary(ref){
-    const pad = paddocks.map(p=>`  • ${p.name||'Unnamed'}: ${p.ha||0} ha (${p.cropType||'—'})`).join('\n')||'  —';
-    const prod = products.map(p=>`  • ${p.name}: ${p.rate} ${p.unit} | Total: ${p.totalQty||'—'}`).join('\n')||'  —';
+    const pad = paddocks.map(p=>`  • ${p.name||'Unnamed'}: ${p.ha||0} ha (${p.cropType||'-'})`).join('\n')||'  -';
+    const prod = products.map(p=>`  • ${p.name}: ${p.rate} ${p.unit} | Total: ${p.totalQty||'-'}`).join('\n')||'  -';
     return [
-      `AERIAL APPLICATION REQUEST — REF: ${ref}`,
+      `AERIAL APPLICATION REQUEST - REF: ${ref}`,
       ``,
       `Client:       ${data.clientName}`,
       `Contact:      ${data.subName} | ${data.subMobile} | ${data.subEmail}`,
       `Farm Address: ${data.farmAddress}`,
       `Airstrip:     ${data.airstrip}`,
       `Date Needed:  ${data.preferredDate}`,
-      `App Type:     ${data.appType}${data.appSubType?' — '+data.appSubType:''}`,
+      `App Type:     ${data.appType}${data.appSubType?' - '+data.appSubType:''}`,
       data.appType!=='Spread' ? `Water Rate:   ${data.waterRate} L/ha` : '',
       `Total Area:   ${totalHa.toFixed(1)} ha`,
       ``,
@@ -939,7 +1163,7 @@ async function submitForm(){
       `PRODUCTS:`,
       prod,
       ``,
-      `Notes: ${data.notes||'—'}`,
+      `Notes: ${data.notes||'-'}`,
       ``,
       `Submitted via Aerotech Client Request Form.`,
     ].filter(l=>l!==false&&l!==null&&l!==undefined).join('\n');
@@ -968,7 +1192,7 @@ async function submitForm(){
     // ── Email notifications ──
     const summary = buildSummary(ref);
     const allNotify = [data.subEmail, data.notifyEmail1, data.notifyEmail2].filter(Boolean);
-    const subject   = encodeURIComponent('Aerial Application Request — '+ref);
+    const subject   = encodeURIComponent('Aerial Application Request - '+ref);
     const body      = encodeURIComponent(summary);
 
     if(EJS_PUB_KEY && EJS_SVC_ID && EJS_CLIENT_T){
@@ -996,16 +1220,17 @@ async function submitForm(){
     const doneEl=$('done-email-note');
     if(doneEl){
       if(EJS_PUB_KEY){ doneEl.textContent='📧 Confirmation sent to '+data.subEmail+(data.notifyEmail1?' and '+data.notifyEmail1:''); }
-      else { doneEl.textContent='📧 Please check your email app — a summary has been pre-filled for you to send.'; }
+      else { doneEl.textContent='📧 Please check your email app - a summary has been pre-filled for you to send.'; }
     }
 
     $('nav-row').style.display='none';
     go('s-done');
+    showClientMap(data);
   }catch(e){
     console.error(e);
     btn.disabled=false;
     btn.innerHTML='Submit Job Request ✈️';
-    alert('Submission failed — please check your connection and try again.\n\n'+e.message);
+    alert('Submission failed - please check your connection and try again.\n\n'+e.message);
   }
 }
 
