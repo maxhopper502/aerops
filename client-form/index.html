@@ -612,10 +612,11 @@ const UNSEL_STYLE = 'flex:1;padding:11px;border:2px solid var(--border);border-r
 
 function yn(field, val, btn){
   ynVals[field] = val;
-  const row = btn.closest('.yn-row');
-  row.querySelectorAll('.yn-btn').forEach(b=>{ b.style.cssText=UNSEL_STYLE; });
+  // Fallback: find nearest parent that has multiple .yn-btn children
+  var container = btn.closest('.yn-row');
+  if(!container) container = btn.closest('.card') || btn.parentElement;
+  if(container) container.querySelectorAll('.yn-btn').forEach(function(b){ b.style.cssText = UNSEL_STYLE; });
   btn.style.cssText = SEL_STYLE;
-  // Special handling for appType toggle
   if(field==='appType') applyAppType(val);
 }
 
@@ -807,7 +808,11 @@ function validate(step){
     req('subName','e-subName');
     req('subMobile','e-subMobile');
     req('subEmail','e-subEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
-    req('invoiceEmail','e-invoiceEmail', el=>el&&/\S+@\S+\.\S+/.test(el.value));
+    // invoiceEmail is optional — only validate format if a value is entered
+    const invEl=$('invoiceEmail');
+    if(invEl&&invEl.value.trim()&&!/\S+@\S+\.\S+/.test(invEl.value.trim())){
+      $('e-invoiceEmail').classList.add('show'); ok=false;
+    } else if(invEl) { $('e-invoiceEmail').classList.remove('show'); }
   }
   if(step===2){
     req('preferredDate','e-preferredDate');
