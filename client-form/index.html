@@ -639,6 +639,15 @@ const UNSEL_STYLE = 'flex:1;padding:11px 8px;border:2px solid #d1d5db;border-rad
 
 
 /* Pure CSS radio selection - no JS styling needed */
+// Switch spray/spread sub-type panels
+function applyAppType(val) {
+  try {
+    var spray = document.getElementById('spray-sub-types');
+    var spread = document.getElementById('spread-sub-types');
+    if(spray) spray.style.display = (val === 'Spray') ? '' : 'none';
+    if(spread) spread.style.display = (val === 'Spread') ? '' : 'none';
+  } catch(e) {}
+}
 function selRadio(lbl, field, val){
   // Update ynVals for validation
   ynVals[field] = val;
@@ -697,55 +706,7 @@ function applyAppType(type){
 
 function setSubtype(val, btn){
   ynVals.appSubType = val;
-  // Deselect all subtype buttons in the same grid
-  const grid = btn.closest('div[id$="-btns"]');
-  if(grid) grid.querySelectorAll('.subtype-btn').forEach(b=>{
-    b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color='var(--muted)';
-  });
-  btn.style.borderColor='var(--navy)'; btn.style.background='#e8eef5'; btn.style.color='var(--navy)';
-}
-
-function refreshProductUnits(isSpread){
-  // Update unit dropdowns in any existing product rows
-  const rows = $('product-rows').children;
-  for(let i=0;i<rows.length;i++){
-    const sel = $('pr-unit-'+i);
-    if(!sel) continue;
-    const cur = sel.value;
-    sel.innerHTML = isSpread
-      ? '<option>kg/Ha</option><option>g/Ha</option><option>L/Ha</option><option>mL/Ha</option>'
-      : '<option>L/Ha</option><option>mL/Ha</option><option>kg/Ha</option><option>g/Ha</option>';
-    // Try to preserve selection
-    if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
-  }
-}
-
-function ynHaz(field, val, btn){
-  hazVals[field] = val;
-  const row = btn.closest('.yn-row');
-  row.querySelectorAll('.yn-btn').forEach(b=>{
-    b.style.cssText='';
-    b.classList.remove('sel-yes','sel-no');
-  });
-  if(val==='yes'){
-    btn.style.cssText='flex:1;padding:11px;border:2px solid var(--red);border-radius:10px;background:#fef2f2;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;color:var(--red)';
-  } else {
-    btn.style.cssText='flex:1;padding:11px;border:2px solid var(--green);border-radius:10px;background:#f0fdf4;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;color:var(--green)';
-  }
-  // Show/hide reveal
-  const rev = $('hr-'+field);
-  if(rev) rev.classList.toggle('show', val==='yes');
-}
-
-/* ── Paddock rows ── */
-const CROPS = ['Wheat','Barley','Canola','Beans','Lentils','Lupins','Oats','Pasture','Cereals','Legumes/Pulses','Oilseeds','Other'];
-function addPaddock(){
-  const tbody = $('paddock-rows');
-  const i = tbody.children.length;
-  const tr = document.createElement('tr');
-  tr.innerHTML =
-    '<td><input type="text" placeholder="Paddock name" id="pd-name-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem"/></td>'+
-    '<td><input type="number" placeholder="0" min="0" step="0.1" id="pd-ha-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem" oninput="calcTotalHa()"/></td>'+
+  // Deselect alorder-radius:8px;font-size:.85rem" oninput="calcTotalHa()"/></td>'+
     '<td><select id="pd-crop-'+i+'" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;background:#fff"><option value="">- Crop -</option>'+CROPS.map(c=>'<option>'+c+'</option>').join('')+'</select></td>';
   tbody.appendChild(tr);
   calcTotalHa();
