@@ -1,0 +1,21 @@
+name: Deploy Client Form Only
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'client-form/**'
+
+jobs:
+  deploy-client-form:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: client-form
+          target-folder: jobs
+          single-commit: true
+          clean: true
