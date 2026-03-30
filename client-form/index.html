@@ -680,28 +680,22 @@ function yn(field, val, btn){
   if(field==='appType'){ try { applyAppType(val); } catch(e2){} }
 }
 
-function applyAppType(type){
-  const isSpread = type==='Spread';
-  // Show/hide water rate field
-  const wrWrap = $('water-rate-wrap');
+function applyAppType(val) {
+  const isSpread = val === 'Spread';
+  // Show/hide water rate field (not relevant for spreading)
+  var wrWrap = document.getElementById('water-rate-wrap');
   if(wrWrap) wrWrap.style.display = isSpread ? 'none' : '';
   // Show/hide sub-type panels
-  const sprayWrap = $('spray-subtype-wrap');
-  const spreadWrap = $('spread-subtype-wrap');
-  if(sprayWrap) sprayWrap.style.display = isSpread ? 'none' : 'block';
-  if(spreadWrap) spreadWrap.style.display = isSpread ? 'block' : 'none';
-  // Reset sub-type selection when switching
+  var spray = document.getElementById('spray-subtype-wrap');
+  var spread = document.getElementById('spread-subtype-wrap');
+  if(spray) spray.style.display = isSpread ? 'none' : 'block';
+  if(spread) spread.style.display = isSpread ? 'block' : 'none';
+  // Reset sub-type selection when switching app type
   ynVals.appSubType = '';
-  document.querySelectorAll('.subtype-btn').forEach(b=>{
-    b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color='var(--muted)';
+  document.querySelectorAll('.subtype-btn').forEach(function(b){
+    b.style.borderColor=''; b.style.background=''; b.style.color='';
+    b.classList.remove('selected');
   });
-  // Rebuild product rows with correct default units
-  refreshProductUnits(isSpread);
-  // Update step 3 header
-  const s3sub = document.querySelector('#s3 .step-sub');
-  if(s3sub) s3sub.textContent = isSpread
-    ? 'List all products, fertilisers or seeds for this job.'
-    : 'List all chemicals or products for this job.';
 }
 
 function setSubtype(val, btn){
