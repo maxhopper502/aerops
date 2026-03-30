@@ -1244,37 +1244,30 @@ addProduct(); addProduct();
 
 updateProgress();
 
-// Auto-fill test data so navigation always works during testing
-window.addEventListener('load',function(){
-  var d = new Date();
-  d.setDate(d.getDate() + 7);
-  var today = d.toISOString().slice(0,10);
-  var d2 = $('preferredDate'); if(d2){ d2.value = today; d2.style.background = '#f0fdf4'; }
-  var e = $('clientName'); if(e){ e.value = 'Test Farm Co.'; e.style.background = '#f0fdf4'; }
-  var n = $('subName'); if(n){ n.value = 'Test User'; n.style.background = '#f0fdf4'; }
-  var m = $('subMobile'); if(m){ m.value = '0400 000 000'; m.style.background = '#f0fdf4'; }
-  var em = $('subEmail'); if(em){ em.value = 'test@test.com'; em.style.background = '#f0fdf4'; }
-  var b = $('base'); if(b){ b.value = 'Eyre Peninsula'; b.style.background = '#f0fdf4'; }
-  var f = $('farmAddress'); if(f){ f.value = 'Test Property, Cummins SA'; f.style.background = '#f0fdf4'; }
-  var a = $('airstrip'); if(a){ a.value = 'Cummins'; a.style.background = '#f0fdf4'; }
-  var tc = $('agreeTC'); if(tc){ tc.checked = true; }
-  ynVals.hasRec = 'no';
-  ynVals.invoiceTo = 'Client';
-  ynVals.appType = 'Spray';
-  ynVals.appSubType = 'General Spraying';
-  ynVals.h_powerlines = 'no';
-  ynVals.h_susceptibleCrops = 'no';
-  ynVals.h_dwelling = 'no';
-  ynVals.h_neighbours = 'no';
-  ynVals.h_other = 'no';
-  ynVals.chemDelivery = 'Client';
-  ynVals.hasMap = 'yes';
-  var banner = document.createElement('div');
-  banner.style = 'position:fixed;bottom:20px;right:20px;background:#1a3a5c;color:#fbbf24;padding:10px 16px;border-radius:10px;font-size:.8rem;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-  banner.textContent = '✅ Test data loaded — click Next to continue';
-  document.body.appendChild(banner);
-  setTimeout(function(){ banner.style.display='none'; }, 5000);
-});
+// Pre-fill test data — use DOMContentLoaded so it runs as soon as HTML is parsed,
+// AND a 500ms setTimeout fallback so it works even if CDN/external scripts are slow
+(function preloadTestData(){
+  function doFill(){
+    var d = new Date(); d.setDate(d.getDate()+7); var today = d.toISOString().slice(0,10);
+    var ids = ['preferredDate','clientName','subName','subMobile','subEmail','base','farmAddress','airstrip'];
+    var vals = [today,'Test Farm Co.','Test User','0400 000 000','test@test.com','Eyre Peninsula','Test Property, Cummins SA','Cummins'];
+    ids.forEach(function(id,i){
+      var el = $(id); if(el){ el.value = vals[i]; el.style.background = '#ccfbd1'; }
+    });
+    ynVals.hasRec='no'; ynVals.invoiceTo='Client'; ynVals.appType='Spray'; ynVals.appSubType='General Spraying';
+    ynVals.h_powerlines='no'; ynVals.h_susceptibleCrops='no'; ynVals.h_dwelling='no'; ynVals.h_neighbours='no';
+    ynVals.h_other='no'; ynVals.chemDelivery='Client'; ynVals.hasMap='yes';
+    var tc = $('agreeTC'); if(tc) tc.checked = true;
+    var bn = document.createElement('div');
+    bn.style='position:fixed;bottom:24px;right:24px;background:#1a3a5c;color:#fbbf24;padding:12px 18px;border-radius:12px;font-size:.82rem;font-weight:700;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,.35)';
+    bn.textContent = '✅ Ready — click Next to continue';
+    document.body.appendChild(bn);
+    setTimeout(function(){ bn.style.display='none'; }, 6000);
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',doFill); }
+  else { doFill(); }
+  setTimeout(doFill, 800); // fallback even if DOMContentLoaded already fired
+})();
 </script>
 
 <script>
