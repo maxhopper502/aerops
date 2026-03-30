@@ -1,4 +1,4 @@
-name: Deploy Agronomist Portal (Aero-Agro)
+name: Deploy Agronomist Portal
 on:
   push:
     branches: [main]
@@ -12,8 +12,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: cd agronomist-portal && yarn install
-      - run: cd agronomist-portal && yarn build
+      - run: cd agronomist-portal && npm install
+      - run: cd agronomist-portal && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AEROTECH_AGRO }}
