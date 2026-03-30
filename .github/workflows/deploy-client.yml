@@ -2,7 +2,7 @@ name: Deploy Client Portal
 on:
   push:
     branches: [main]
-    paths: ['aerotech-client-portal/**', 'shared-firebase.json']
+    paths: ['aerotech-client-portal/**']
   workflow_dispatch:
 jobs:
   deploy:
@@ -12,9 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: aerotech-client-portal/yarn.lock
-      - run: cd aerotech-client-portal && yarn install --frozen-lockfile
+      - run: cd aerotech-client-portal && yarn install
       - run: cd aerotech-client-portal && yarn build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

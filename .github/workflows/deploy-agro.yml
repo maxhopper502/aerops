@@ -2,7 +2,7 @@ name: Deploy Agronomist Portal (Aero-Agro)
 on:
   push:
     branches: [main]
-    paths: ['agronomist-portal/**', 'shared-firebase.json']
+    paths: ['agronomist-portal/**']
   workflow_dispatch:
 jobs:
   deploy:
@@ -12,9 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: agronomist-portal/yarn.lock
-      - run: cd agronomist-portal && yarn install --frozen-lockfile
+      - run: cd agronomist-portal && yarn install
       - run: cd agronomist-portal && yarn build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

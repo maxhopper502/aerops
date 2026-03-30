@@ -2,7 +2,7 @@ name: Deploy Admin Portal
 on:
   push:
     branches: [main]
-    paths: ['admin-portal/**', 'shared-firebase.json']
+    paths: ['admin-portal/**']
   workflow_dispatch:
 jobs:
   deploy:
@@ -12,9 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: admin-portal/yarn.lock
-      - run: cd admin-portal && yarn install --frozen-lockfile
+      - run: cd admin-portal && yarn install
       - run: cd admin-portal && yarn build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
