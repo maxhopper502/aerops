@@ -1,0 +1,34 @@
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+export default function Layout() {
+  const { user, logout, agronomistData } = useAuth();
+  const navigate = useNavigate();
+  const navClass = ({ isActive }) =>
+    `px-4 py-2 rounded-lg font-semibold text-sm ${isActive ? 'bg-[#e67e22] text-white' : 'text-white hover:bg-white/20'}`;
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-[#1a3a5c] text-white shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">Aerotech Agronomist</h1>
+            <p className="text-blue-200 text-xs">{agronomistData?.name || user?.email}</p>
+          </div>
+          <button onClick={async () => { await logout(); navigate('/login'); }}
+            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-bold">
+            Logout
+          </button>
+        </div>
+        <div className="max-w-5xl mx-auto px-4 pb-3 flex gap-2">
+          <NavLink to="/" className={navClass}>Dashboard</NavLink>
+          <NavLink to="/clients" className={navClass}>My Clients</NavLink>
+          <NavLink to="/submit-job" className={navClass}>Submit Job</NavLink>
+        </div>
+      </header>
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        <Outlet />
+      </main>
+    </div>
+  );
+}

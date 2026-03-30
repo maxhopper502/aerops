@@ -5,11 +5,14 @@
   "targets": {
     "aerotech-ops": {
       "hosting": {
-        "office":  ["aerotech-ops"],
-        "pilot":   ["aerops-pilot"],
-        "mixer":   ["aerops-mixer"],
-        "jobs":    ["aerops-jobs"],
-        "landing": ["aerops-landing"]
+        "office": ["aerotech-ops"],
+        "pilot": ["aerops-pilot"],
+        "mixer": ["aerops-mixer"],
+        "jobs": ["aerops-jobs"],
+        "landing": ["aerops-landing"],
+        "clients": ["aerotech-clients"],
+        "admin": ["aerotech-admin"],
+        "agronomist": ["aerotech-agronomist"]
       }
     }
   }

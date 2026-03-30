@@ -1,0 +1,8 @@
+{
+  "hosting": {
+    "public": "dist",
+    "site": "aerotech-agronomist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}

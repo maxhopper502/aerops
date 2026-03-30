@@ -1,0 +1,35 @@
+name: Deploy Client Portal
+
+on:
+  push:
+    branches: [main]
+    paths: ['aerotech-client-portal/**', 'shared-firebase.json']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: aerotech-client-portal/yarn.lock
+
+      - name: Install dependencies
+        run: cd aerotech-client-portal && yarn install --frozen-lockfile
+
+      - name: Build
+        run: cd aerotech-client-portal && yarn build
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0.3.1
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AEROTECH_CLIENTS }}
+          channel: live
+          projectId: aerotech-ops
+        env:
+          FIREBASE_DEPLOY_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
