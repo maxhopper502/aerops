@@ -640,14 +640,6 @@ const UNSEL_STYLE = 'flex:1;padding:11px 8px;border:2px solid #d1d5db;border-rad
 
 /* Pure CSS radio selection - no JS styling needed */
 // Switch spray/spread sub-type panels
-function applyAppType(val) {
-  try {
-    var spray = document.getElementById('spray-sub-types');
-    var spread = document.getElementById('spread-sub-types');
-    if(spray) spray.style.display = (val === 'Spray') ? '' : 'none';
-    if(spread) spread.style.display = (val === 'Spread') ? '' : 'none';
-  } catch(e) {}
-}
 function selRadio(lbl, field, val){
   // Update ynVals for validation
   ynVals[field] = val;
