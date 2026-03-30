@@ -12,8 +12,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: cd aerotech-client-portal && yarn install
-      - run: cd aerotech-client-portal && yarn build
+          cache: 'npm'
+          cache-dependency-path: aerotech-client-portal/package-lock.json
+      - run: cd aerotech-client-portal && npm ci
+      - run: cd aerotech-client-portal && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AEROTECH_CLIENTS }}
