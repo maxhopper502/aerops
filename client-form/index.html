@@ -1243,6 +1243,34 @@ addPaddock(); addPaddock(); addPaddock();
 addProduct(); addProduct();
 
 updateProgress();
+
+// Auto-fill test data so navigation always works during testing
+(function(){
+  var d = new Date();
+  d.setDate(d.getDate() + 7);
+  var today = d.toISOString().slice(0,10);
+  if($('preferredDate')) $('preferredDate').value = today;
+  if($('clientName')) $('clientName').value = 'Test Farm';
+  if($('subName')) $('subName').value = 'Test User';
+  if($('subMobile')) $('subMobile').value = '0400 000 000';
+  if($('subEmail')) $('subEmail').value = 'test@test.com';
+  if($('base')) $('base').value = 'Eyre Peninsula';
+  if($('farmAddress')) $('farmAddress').value = 'Test Property, SA';
+  if($('airstrip')) $('airstrip').value = 'Cummins';
+  if($('invoiceEmail')) $('invoiceEmail').value = '';
+  ynVals.hasRec = 'no';
+  ynVals.invoiceTo = 'Client';
+  ynVals.appType = 'Spray';
+  ynVals.appSubType = 'General Spraying';
+  ynVals.h_powerlines = 'no';
+  ynVals.h_susceptibleCrops = 'no';
+  ynVals.h_dwelling = 'no';
+  ynVals.h_neighbours = 'no';
+  ynVals.h_other = 'no';
+  ynVals.chemDelivery = 'Client';
+  ynVals.hasMap = 'yes';
+  if($('agreeTC')) $('agreeTC').checked = true;
+})();
 </script>
 
 <script>
