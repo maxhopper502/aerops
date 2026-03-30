@@ -498,7 +498,7 @@ function openJob(id){
     const flightCharge = billingMode==='ha'?Math.round(ratePerHa*est.totalHa):Math.round(rate*hours);
     const totalInv = j.billingTotal||j.actualCost||(flightCharge+chem+other1+other2);
     // Always compute $/ha regardless of billing mode
-    const dollarPerHa = est.totalHa>0 ? (totalInv/est.totalHa) : 0;
+    const dollarPerHa = j.pricePerHa||(est.totalHa>0?(totalInv/est.totalHa):0);
 
     document.getElementById('modal-body').innerHTML = `
       <!-- Invoice Header -->
@@ -2748,10 +2748,10 @@ function printInvoice(jobId){
   var airstrip=parseFloat(j.chemCost)||0, airstripDesc=j.chemDesc||'Airstrip / Loading Area Maintenance';
   var other1=parseFloat(j.other1)||0, other1Desc=j.other1Desc||'Other Charges';
   var other2=parseFloat(j.other2)||0, other2Desc=j.other2Desc||'Other Charges';
-  var totalCharges=parseFloat(j.billingTotal||j.actualCost)||(flightCharge+airstrip+other1+other2);
+  var totalCharges=parseFloat(j.billingTotal||j.actualCost||flightCharge);
   var gst=Math.round(totalCharges*0.1*100)/100;
   var invTotal=Math.round((totalCharges+gst)*100)/100;
-  var dollarPerHa=ha>0?totalCharges/ha:0;
+  var dollarPerHa=j.pricePerHa||(ha>0?totalCharges/ha:0);
   var fmtA=function(v){return new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD',minimumFractionDigits:2}).format(v);};
   var fmtN=function(v){return new Intl.NumberFormat('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);};
   var now=new Date();
@@ -2889,7 +2889,9 @@ async function saveActualCost(jobId){
   j.other2=other2; j.other2Desc=other2Desc;
   j.other1InPilotPay = document.getElementById('ac-other1-pilot')?.checked||false;
   j.other2InPilotPay = document.getElementById('ac-other2-pilot')?.checked||false;
-  j.otherCharges=other1+other2; j.actualCost=total;
+  j.otherCharges=other1+other2; j.actualCost=total; j.billingTotal=total;
+  // Also persist pricePerHa so it's available on invoices even if job was never re-priced via modal
+  if(ha>0) j.pricePerHa=total/ha;
   await saveJob(j);
   renderJobs();
   openJob(jobId);
