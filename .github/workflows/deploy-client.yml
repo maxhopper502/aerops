@@ -1,0 +1,26 @@
+name: Deploy Client Portal
+on:
+  push:
+    branches: [main]
+    paths: ['aerotech-client-portal/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --include=dev
+        working-directory: aerotech-client-portal
+      - run: npm run build
+        working-directory: aerotech-client-portal
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AEROTECH_CLIENTS }}
+          channel: live
+          projectId: aerotech-ops
