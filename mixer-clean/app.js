@@ -541,7 +541,9 @@ function renderMixing(){
     wrap.innerHTML=html; return;
   }
 
-  if(p.paused){
+  if(j.pilotHold){
+    html+='<div style="background:#dc2626;border:2px solid #f87171;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px"><div style="font-size:1.3rem;margin-bottom:6px">🛑</div><div style="font-weight:800;color:#fff;font-size:1rem">HOLD — Pilot Has Paused Loading</div><div style="font-size:.75rem;color:#fca5a5;margin-top:4px">Wait for pilot to clear hold before loading</div></div><button class="mx-load-btn" disabled style="opacity:.5;cursor:not-allowed;background:#64748b">✈️ Load Plane — Hold Active</button>';
+  } else if(p.paused){
     html+='<div class="mx-paused-banner"><div style="font-size:1.5rem">⏸️</div>'+
       '<div style="font-weight:800;color:#fbbf24;margin-top:6px">Job Paused</div>'+
       '<button class="load-btn blue" style="margin-top:12px" onclick="resumeJob()">▶ Resume</button></div>';
