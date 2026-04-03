@@ -156,40 +156,50 @@ function loadJobs(){
 
 // ─── Job Rollover ───────────────────────────────────────────────────────
 // Auto-roll past jobs: not-started -> today, started/incomplete -> tomorrow (top of list)
+// Remaining time estimate is recalculated based on loads remaining
 async function rolloverPastJobs(){
   const todayDs = new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
   const tomorrowDs = new Date(Date.now()+86400000).toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
-  // Jobs already started (in_progress) with remaining loads roll to tomorrow as first priority
-  // Jobs not yet started roll to today
   const NOT_STARTED = ['new','quoted','scheduled'];
   const STARTED = ['in_progress'];
   let changed = false;
   for(const j of jobs){
     const sd = j.schedule?.scheduledDate;
     if(!sd) continue;
-    if(sd >= todayDs) continue; // only roll past dates
+    if(sd >= todayDs) continue;
+    const mp = j.mixProgress || {};
+    const loadsT = mp.loadsTotal || 0;
+    const loadsC = mp.loadsComplete || 0;
     if(NOT_STARTED.includes(j.status)){
-      // Not started yet — roll to today
       j.schedule.scheduledDate = todayDs;
       j.rollover = false;
+      delete j.rolloverRemainingHours;
       delete j.schedule.rolloverTime;
       changed = true;
-      console.log('Rollover (unstarted)', j.id, sd, '-> today');
     } else if(STARTED.includes(j.status)){
-      // Started but incomplete — roll to tomorrow, mark as rollover (top priority)
-      const rem = (j.mixProgress?.loadsTotal || 0) - (j.mixProgress?.loadsComplete || j.loadsComplete || 0);
-      if((j.mixProgress?.loadsTotal || 0) > 0 && rem > 0){
+      if(loadsT > 0 && loadsC < loadsT){
+        // Calculate remaining time based on proportion of loads left
+        const remLoads = loadsT - loadsC;
+        const est = estimateJob(j);
+        const fullBlockHrs = est.breakdown?.blockTime || est.hours || 0;
+        const remHrs = (remLoads / loadsT) * fullBlockHrs;
         j.schedule.scheduledDate = tomorrowDs;
         j.rollover = true;
-        j.schedule.rolloverTime = '07:00'; // first slot tomorrow
+        j.rolloverRemainingHours = remHrs;
+        j.schedule.rolloverTime = '07:00';
         changed = true;
-        console.log('Rollover (started,', rem,'loads left)', j.id, sd, '-> tomorrow 07:00');
-      } else {
-        // Started but no loads tracked — roll to today like unstarted
+      } else if(loadsT > 0 && loadsC >= loadsT){
+        // All loads complete but status still in_progress — roll to today as normal
         j.schedule.scheduledDate = todayDs;
         j.rollover = false;
+        delete j.rolloverRemainingHours;
         changed = true;
-        console.log('Rollover (started, no loads tracked)', j.id, sd, '-> today');
+      } else {
+        // No loads tracked — roll to today like unstarted
+        j.schedule.scheduledDate = todayDs;
+        j.rollover = false;
+        delete j.rolloverRemainingHours;
+        changed = true;
       }
     }
   }
@@ -1416,6 +1426,11 @@ function renderScheduler(){
       const bg   = est.isHerb?'#fee2e2':cls==='spread'?'#fef9c3':cls==='misting'?'#e0e7ff':'#dbeafe';
       const borderL = est.isHerb ? 'border-left:3px solid #dc2626;' : '';
       const herbLabel = est.isHerb ? '<span style="font-size:.6rem;color:#dc2626;font-weight:800">🌿 HERB </span>' : '';
+      // Show remaining time estimate for rollover jobs
+      const remHrs = j.rolloverRemainingHours;
+      const remLabel = (j.rollover && remHrs)
+        ? `<span style="background:#fef3c7;color:#92400e;font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:3px">⏱ ${Math.round(remHrs*60)}min left</span>`
+        : '';
       const bar  = isIP||isPC ? `
         <div style="height:4px;background:rgba(0,0,0,.1);border-radius:3px;margin-top:4px;overflow:hidden">
           <div style="height:100%;background:${isPC?'#16a34a':'#2563eb'};width:${pct}%;border-radius:3px;transition:.3s"></div>
@@ -1424,7 +1439,7 @@ function renderScheduler(){
       ` : '';
       const acIcon = isPC?'✅ ':isIP?'🔵 ':'';
       return `<div style="background:${bg};${borderL}border-radius:6px;padding:4px 6px;margin-bottom:3px;cursor:pointer" onclick="openJob('${j.id}')">
-        <div style="font-size:.72rem;font-weight:700;${est.isHerb?'color:#dc2626':''}">${herbLabel}${acIcon}${j.clientName||'—'} · ${ha} ha</div>
+        <div style="font-size:.72rem;font-weight:700;${est.isHerb?'color:#dc2626':''}">${herbLabel}${acIcon}${j.clientName||'—'} · ${ha} ha ${remLabel}</div>
         <div style="font-size:.62rem;color:#6b7280">${j.airstrip||'—'} · ${j.schedule?.aircraft||'—'}</div>
         ${bar}
       </div>`;
@@ -1435,7 +1450,10 @@ function renderScheduler(){
       : dayJobs.map(j=>jobPill(j)).join('');
 
     // Total block hours for the day
-    const totalBlockHrs = dayJobs.reduce((s,j)=>s+estimateJob(j).breakdown.blockTime,0);
+    const totalBlockHrs = dayJobs.reduce((s,j)=>{
+      if(j.rollover && j.rolloverRemainingHours) return s + j.rolloverRemainingHours;
+      return s + (estimateJob(j).breakdown?.blockTime || 0);
+    },0);
     const hrsLabel = totalBlockHrs>0
       ? (Math.floor(totalBlockHrs)+'h '+(Math.round((totalBlockHrs%1)*60))+'m')
       : '';
