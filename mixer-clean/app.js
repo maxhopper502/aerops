@@ -552,7 +552,8 @@ function renderMixing(){
   }
 
   if(j.pilotHold){
-    html+='<div id="hold-banner" style="background:#dc2626;border:2px solid #f87171;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px"><div style="font-size:1.3rem;margin-bottom:6px">🛑</div><div style="font-weight:800;color:#fff;font-size:1rem">HOLD — Pilot Has Paused Loading</div><div style="font-size:.75rem;color:#fca5a5;margin-top:4px">Wait for pilot to clear hold before loading</div></div><button class="mx-load-btn" disabled style="opacity:.5;cursor:not-allowed;background:#64748b">✈️ Load Plane — Hold Active</button>';
+    html+='<div id="hold-banner" style="background:#dc2626;border:2px solid #f87171;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px"><div style="font-size:1.3rem;margin-bottom:6px">🛑</div><div style="font-weight:800;color:#fff;font-size:1rem">HOLD — Pilot Has Paused Loading</div><div style="font-size:.75rem;color:#fca5a5;margin-top:4px">Wait for pilot to clear hold before loading</div><button class="mx-load-btn" style="margin-top:10px;background:#fbbf24;color:#1c1917;font-weight:800" onclick="if(confirm(\'⚠️ Clear hold? Only do this if you have spoken to the pilot.\')){clearPilotHold()}">🚫 Clear Hold</button></div><button class="mx-load-btn" disabled style="opacity:.5;cursor:not-allowed;background:#64748b">✈️ Load Plane — Hold Active</button>';
+  }
   } else if(p.paused){
     html+='<div class="mx-paused-banner"><div style="font-size:1.5rem">⏸️</div>'+
       '<div style="font-weight:800;color:#fbbf24;margin-top:6px">Job Paused</div>'+
@@ -716,4 +717,17 @@ window.useAllStock=function(pi,totalNeeded,unit,totalHa,origRate){
     cb.dataset.newRate='';
     window.updateStockPreview(pi,totalNeeded,unit);
   }
+};
+// Clear pilot hold — mixer override with confirmation
+window.clearPilotHold=function(){
+  var j=jobs.find(function(x){return x.id===jobId;});
+  if(!j) return;
+  fetch(FSBASE+'/jobs/'+jobId+'?'+FJ.mask+'&key='+FSKEY,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:{pilotHold:{booleanValue:false}}})
+  }).then(function(r){return r.json();}).then(function(d){
+    j.pilotHold=false;
+    renderMixing();
+  }).catch(function(e){alert('Failed to clear hold: '+e);});
 };
