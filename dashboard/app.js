@@ -155,21 +155,42 @@ function loadJobs(){
   // Load via plain REST fetch — works on all browsers/networks without WebSocket
 
 // ─── Job Rollover ───────────────────────────────────────────────────────
-// Auto-roll jobs with past scheduledDate to today (Adelaide timezone)
+// Auto-roll past jobs: not-started -> today, started/incomplete -> tomorrow (top of list)
 async function rolloverPastJobs(){
   const todayDs = new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
   const tomorrowDs = new Date(Date.now()+86400000).toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
-  const ROLLOVER_STATUSES = ['new','quoted','scheduled','in_progress'];
+  // Jobs already started (in_progress) with remaining loads roll to tomorrow as first priority
+  // Jobs not yet started roll to today
+  const NOT_STARTED = ['new','quoted','scheduled'];
+  const STARTED = ['in_progress'];
   let changed = false;
   for(const j of jobs){
     const sd = j.schedule?.scheduledDate;
     if(!sd) continue;
-    if(!ROLLOVER_STATUSES.includes(j.status)) continue;
-    if(sd < todayDs){
+    if(sd >= todayDs) continue; // only roll past dates
+    if(NOT_STARTED.includes(j.status)){
+      // Not started yet — roll to today
       j.schedule.scheduledDate = todayDs;
-      if(j.status === 'scheduled') j.status = 'in_progress';
+      j.rollover = false;
+      delete j.schedule.rolloverTime;
       changed = true;
-      console.log('Rollover job', j.id, 'from', sd, '->', todayDs);
+      console.log('Rollover (unstarted)', j.id, sd, '-> today');
+    } else if(STARTED.includes(j.status)){
+      // Started but incomplete — roll to tomorrow, mark as rollover (top priority)
+      const rem = (j.mixProgress?.loadsTotal || 0) - (j.mixProgress?.loadsComplete || j.loadsComplete || 0);
+      if((j.mixProgress?.loadsTotal || 0) > 0 && rem > 0){
+        j.schedule.scheduledDate = tomorrowDs;
+        j.rollover = true;
+        j.schedule.rolloverTime = '07:00'; // first slot tomorrow
+        changed = true;
+        console.log('Rollover (started,', rem,'loads left)', j.id, sd, '-> tomorrow 07:00');
+      } else {
+        // Started but no loads tracked — roll to today like unstarted
+        j.schedule.scheduledDate = todayDs;
+        j.rollover = false;
+        changed = true;
+        console.log('Rollover (started, no loads tracked)', j.id, sd, '-> today');
+      }
     }
   }
   if(changed){ await saveJobs(); renderJobs(); renderScheduler(); }
@@ -1346,7 +1367,13 @@ function renderScheduler(){
   const grid = document.getElementById('week-grid');
   grid.innerHTML = days.map((d,i)=>{
     const ds = d.toLocaleDateString('en-CA',{timeZone:'Australia/Adelaide'});
-    const dayJobs = scheduled.filter(j=>getCalDate(j)===ds);
+    const dayJobs = scheduled.filter(j=>getCalDate(j)===ds)
+      .sort((a,b)=>{
+        // Rollover jobs (started but incomplete) go to top of the day
+        if(a.rollover && !b.rollover) return -1;
+        if(!a.rollover && b.rollover) return 1;
+        return 0;
+      });
     const isToday = ds===todayStr;
 
     // Summary counts — split by operation type
