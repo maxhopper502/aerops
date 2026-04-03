@@ -722,7 +722,7 @@ window.useAllStock=function(pi,totalNeeded,unit,totalHa,origRate){
 window.clearPilotHold=function(){
   var j=jobs.find(function(x){return x.id===jobId;});
   if(!j) return;
-  fetch(FSBASE+'/jobs/'+jobId+'?'+FJ.mask+'&key='+FSKEY,{
+  fetch(FSBASE+'/jobs/'+jobId+'?updateMask.fieldPaths=pilotHold&key='+FSKEY,{
     method:'PATCH',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({fields:{pilotHold:{booleanValue:false}}})
