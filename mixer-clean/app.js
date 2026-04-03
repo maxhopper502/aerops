@@ -452,10 +452,20 @@ window.saveStockSetup=function(){
 };
 
 // ─── Mixing ───────────────────────────────────────────────────
+var _mixHoldIv=null;
 function renderMixing(){
   var j=jobs.find(function(x){return x.id===jobId;});
   var wrap=document.getElementById('mixing-wrap');
   if(!j){wrap.innerHTML='<div class="mx-bg"><p style="color:#94a3b8">Not found.</p></div>';return;}
+  // Auto-refresh hold banner every 5s so pilot changes show without manual refresh
+  if(_mixHoldIv) clearInterval(_mixHoldIv);
+  _mixHoldIv=setInterval(function(){
+    var fj=jobs.find(function(x){return x.id===jobId;});
+    if(!fj) return;
+    var b=document.getElementById('hold-banner');
+    if(fj.pilotHold&&!b) renderMixing();
+    else if(!fj.pilotHold&&b) renderMixing();
+  },5000);
   var ld=calcLoads(j), cls=jobClass(j), p=getProg(jobId), prods=j.products||[];
   var stockData=getStock(jobId)||{};
   var pct=Math.min(100,Math.round((p.load/ld.loads)*100));
@@ -542,7 +552,7 @@ function renderMixing(){
   }
 
   if(j.pilotHold){
-    html+='<div style="background:#dc2626;border:2px solid #f87171;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px"><div style="font-size:1.3rem;margin-bottom:6px">🛑</div><div style="font-weight:800;color:#fff;font-size:1rem">HOLD — Pilot Has Paused Loading</div><div style="font-size:.75rem;color:#fca5a5;margin-top:4px">Wait for pilot to clear hold before loading</div></div><button class="mx-load-btn" disabled style="opacity:.5;cursor:not-allowed;background:#64748b">✈️ Load Plane — Hold Active</button>';
+    html+='<div id="hold-banner" style="background:#dc2626;border:2px solid #f87171;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px"><div style="font-size:1.3rem;margin-bottom:6px">🛑</div><div style="font-weight:800;color:#fff;font-size:1rem">HOLD — Pilot Has Paused Loading</div><div style="font-size:.75rem;color:#fca5a5;margin-top:4px">Wait for pilot to clear hold before loading</div></div><button class="mx-load-btn" disabled style="opacity:.5;cursor:not-allowed;background:#64748b">✈️ Load Plane — Hold Active</button>';
   } else if(p.paused){
     html+='<div class="mx-paused-banner"><div style="font-size:1.5rem">⏸️</div>'+
       '<div style="font-weight:800;color:#fbbf24;margin-top:6px">Job Paused</div>'+
