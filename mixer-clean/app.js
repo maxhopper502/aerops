@@ -724,6 +724,7 @@ window.clearPilotHold=function(){
   var j=jobs.find(function(x){return x.id===jobId;});
   if(!j) return;
   fetch(FS_BASE+'/jobs/'+jobId+'?updateMask.fieldPaths=pilotHold&key='+FS_KEY,{
+    signal:AbortSignal.timeout(10000),
     method:'PATCH',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({fields:{pilotHold:{booleanValue:false}}})
