@@ -733,3 +733,5 @@ window.clearPilotHold=function(){
     renderMixing();
   }).catch(function(e){alert('Failed to clear hold: '+e);});
 };
+
+// Updated: mixer login fix deployed via workflow dispatch
