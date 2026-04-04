@@ -6,21 +6,26 @@ var _loginMixer = '', _loginPin = '';
 // Load live mixer list + PINs from Firestore at startup
 (async function loadMixerSettings(){
   try{
-    const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const db=getFirestore(initializeApp({apiKey:"AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI",projectId:"aerotech-ops",appId:"1:645848371961:web:4415c4d7623219fd31c828"}));
-    const snap=await getDoc(doc(db,'config','settings'));
+    // Race Firebase SDK load against a 10s timeout — prevents infinite hang on slow CDN
+    const {initializeApp} = await Promise.race([
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 10000))
+    ]);
+    const {getFirestore,doc,getDoc} = await Promise.race([
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 10000))
+    ]);
+    const db = getFirestore(initializeApp({apiKey:"AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI",projectId:"aerotech-ops",appId:"1:645848371961:web:4415c4d7623219fd31c828"}));
+    const snap = await getDoc(doc(db,'config','settings')).catch(e => { throw new Error('Firestore: '+e.message) });
     if(snap.exists()){
       const d=snap.data();
       if(d.mixerObjs&&d.mixerObjs.length){
-        // Rebuild MIXER_PINS from Firestore
         Object.keys(MIXER_PINS).forEach(k=>delete MIXER_PINS[k]);
         d.mixerObjs.forEach(m=>{if(m.name&&m.pin)MIXER_PINS[m.name]=String(m.pin);});
-        // Rebuild mixer buttons
         buildMixerGrid(d.mixerObjs.map(m=>m.name).filter(Boolean));
       }
     }
-  }catch(e){console.warn('loadMixerSettings:',e);}
+  }catch(e){console.warn('loadMixerSettings:',e.message||e);}
 })();
 
 function buildMixerGrid(names){
