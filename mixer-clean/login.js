@@ -36,7 +36,7 @@ var _loginMixer = '', _loginPin = '';
   }catch(e){
     console.warn('loadMixerSettings:', e.message||e);
     var errEl = document.getElementById('pin-err');
-    if(errEl) errEl.textContent = '⚠️ Firebase unavailable — using offline mode';
+    if(errEl) errEl.textContent = '⚠️ Firebase unavailable — using offline PINs';
     var spinner = document.getElementById('login-spinner');
     if(spinner) spinner.style.display='none';
   }
