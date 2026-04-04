@@ -4,6 +4,14 @@ var ALL_JOBS_PIN = '0000'; // supervisor PIN to see all jobs
 var _loginMixer = '', _loginPin = '';
 
 // Load live mixer list + PINs from Firestore at startup
+// Show loading state immediately
+(function(){
+  var spinner = document.getElementById('login-spinner');
+  if(spinner) spinner.style.display = 'block';
+  var errEl = document.getElementById('pin-err');
+  if(errEl) errEl.textContent = '⏳ Loading...';
+})();
+
 (async function loadMixerSettings(){
   try{
     // Race Firebase SDK load against a 10s timeout — prevents infinite hang on slow CDN
@@ -25,7 +33,13 @@ var _loginMixer = '', _loginPin = '';
         buildMixerGrid(d.mixerObjs.map(m=>m.name).filter(Boolean));
       }
     }
-  }catch(e){console.warn('loadMixerSettings:',e.message||e);}
+  }catch(e){
+    console.warn('loadMixerSettings:', e.message||e);
+    var errEl = document.getElementById('pin-err');
+    if(errEl) errEl.textContent = '⚠️ Firebase unavailable — using offline mode';
+    var spinner = document.getElementById('login-spinner');
+    if(spinner) spinner.style.display='none';
+  }
 })();
 
 function buildMixerGrid(names){
@@ -86,6 +100,11 @@ function drawDots(){
 }
 
 function doLogin(name){
+  var spinner = document.getElementById('login-spinner');
+  if(spinner) spinner.style.display='none';
+  var errEl = document.getElementById('pin-err');
+  if(errEl) errEl.textContent = '';
+
   if (typeof window._appLogin === 'function'){
     window._appLogin(name);
   } else {
