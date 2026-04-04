@@ -17,11 +17,11 @@ var _loginMixer = '', _loginPin = '';
     // Race Firebase SDK load against a 10s timeout — prevents infinite hang on slow CDN
     const {initializeApp} = await Promise.race([
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 10000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 3000))
     ]);
     const {getFirestore,doc,getDoc} = await Promise.race([
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 10000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SDK timeout')), 3000))
     ]);
     const db = getFirestore(initializeApp({apiKey:"AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI",projectId:"aerotech-ops",appId:"1:645848371961:web:4415c4d7623219fd31c828"}));
     const snap = await getDoc(doc(db,'config','settings')).catch(e => { throw new Error('Firestore: '+e.message) });
