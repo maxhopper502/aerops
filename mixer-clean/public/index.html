@@ -81,7 +81,7 @@ body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
     <div class="hdr-title">AeroOps</div>
     <div class="hdr-sub" id="hdr-sub">Mixer Operations</div>
   </div>
-  <div class="sync-badge" id="sync-badge">&#8230;</div>
+  <div class="sync-badge" id="sync-badge">...</div>
 </div>
 
 <div id="s-jobs" class="screen active">
@@ -96,15 +96,18 @@ body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
 var MIXER_PINS={"Ben Simcock":"1111","Robert Proud":"2222","Amber Meyers":"3333","Shaun Dempsey":"4444","Adam Sullivan":"5555","Will Piip":"6666","Craig Dawson":"7777"};
 var FS_KEY="AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI";
 var FS_BASE="https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents";
-var _loginMixer="",_loginPin="",_fetchTimer=null;
+var _loginMixer="",_loginPin="";
 
-function showScr(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});document.getElementById(id).classList.add("active");}
+function showScr(id){
+  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
+  document.getElementById(id).classList.add("active");
+}
 
 function fetchJobs(){
   var b=document.getElementById("sync-badge");
   if(b){b.textContent="Syncing...";}
   var controller=new AbortController();
-  _fetchTimer=setTimeout(function(){
+  var timer=setTimeout(function(){
     controller.abort();
     var b=document.getElementById("sync-badge");
     if(b){b.textContent="Timeout";}
@@ -113,24 +116,28 @@ function fetchJobs(){
     signal:controller.signal,
     headers:{"Accept":"application/json"}
   })
-  .then(function(r){clearTimeout(_fetchTimer);if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+  .then(function(r){
+    clearTimeout(timer);
+    if(!r.ok){throw new Error("HTTP "+r.status);}
+    return r.json();
+  })
   .then(function(d){
-    clearTimeout(_fetchTimer);
-    if(d.error)throw new Error(d.error.message||"err");
+    clearTimeout(timer);
+    if(d.error){throw new Error(d.error.message||"Firestore error");}
     window.jobs=(d.documents||[]).map(fsDoc);
     var b=document.getElementById("sync-badge");
-    if(b){b.textContent="Live";b.className="sync-badge";}
-    if(document.getElementById("s-jobs").classList.contains("active"))renderJobs();
+    if(b){b.textContent="Live";}
+    if(document.getElementById("s-jobs").classList.contains("active")){renderJobs();}
   })
   .catch(function(e){
-    clearTimeout(_fetchTimer);
+    clearTimeout(timer);
     var b=document.getElementById("sync-badge");
     if(b){b.textContent=e.name==="AbortError"?"Timeout":"Error";}
   });
 }
 
 function fsDoc(doc){
-  if(!doc||!doc.fields)return{};
+  if(!doc||!doc.fields){return {};}
   var f=doc.fields;
   var sched=(f.schedule&&f.schedule.mapValue)?f.schedule.mapValue.fields:{};
   var mp=(f.mixProgress&&f.mixProgress.mapValue)?f.mixProgress.mapValue.fields:{};
@@ -145,7 +152,14 @@ function fsDoc(doc){
     clientName:(f.clientName?(f.clientName.stringValue||""):""),
     loadsArr:(f.loads&&f.loads.arrayValue&&f.loads.arrayValue.values)?f.loads.arrayValue.values.map(function(l){
       var ff=(l.mapValue&&l.mapValue.fields)||{};
-      return{loadId:(ff.loadId?(ff.loadId.stringValue||""):""),containerId:(ff.containerId?(ff.containerId.stringValue||""):""),chemName:(ff.chemName?(ff.chemName.stringValue||""):""),volL:(ff.volL?(ff.volL.doubleValue||ff.volL.integerValue||0):0),rate:(ff.rate?(ff.rate.doubleValue||ff.rate.integerValue||0):0),complete:!!(ff.complete&&ff.complete.booleanValue)};
+      return{
+        loadId:(ff.loadId?(ff.loadId.stringValue||""):""),
+        containerId:(ff.containerId?(ff.containerId.stringValue||""):""),
+        chemName:(ff.chemName?(ff.chemName.stringValue||""):""),
+        volL:(ff.volL?(parseFloat(ff.volL.doubleValue||ff.volL.integerValue)||0):0),
+        rate:(ff.rate?(parseFloat(ff.rate.doubleValue||ff.rate.integerValue)||0):0),
+        complete:!!(ff.complete&&ff.complete.booleanValue)
+      };
     }):[],
     pilotHold:!!(f.pilotHold&&f.pilotHold.booleanValue),
     loadsDone:(mp.loadsComplete?(parseFloat(mp.loadsComplete.doubleValue||mp.loadsComplete.integerValue)||0):0),
@@ -157,61 +171,144 @@ function renderJobs(){
   var name=window.currentMixer||"";
   var today=new Date().toISOString().slice(0,10);
   var list=(window.jobs||[]).filter(function(j){
-    if(j.schedDate&&j.schedDate!==today)return false;
-    if(j.status==="invoiced")return false;
-    if(name&&name!=="ALL"&&j.mixerName!==name)return false;
+    if(j.schedDate&&j.schedDate!==today){return false;}
+    if(j.status==="invoiced"){return false;}
+    if(name&&name!=="ALL"&&j.mixerName!==name){return false;}
     return true;
   });
   list.sort(function(a,b){return(b.schedDate||"").localeCompare(a.schedDate||"");});
-  var ul=document.getElementById("jobs-list");if(!ul)return;
-  if(!list.length){ul.innerHTML='<div style="text-align:center;padding:60px 20px;color:#5a6a7a">No jobs for today</div>';return;}
-  ul.innerHTML=list.map(function(j){
+  var ul=document.getElementById("jobs-list");
+  if(!ul){return;}
+  if(!list.length){
+    ul.innerHTML='<div style="text-align:center;padding:60px 20px;color:#5a6a7a">No jobs for today</div>';
+    return;
+  }
+  var html="";
+  for(var i=0;i<list.length;i++){
+    var j=list[i];
     var c={active:"#4a9eff",completed:"#4caf50",cancelled:"#f44336"}[j.status]||"#4a9eff";
-    return"<div class=\"job-btn\" style=\"border-color:"+c+"\" onclick=\"showJob(\'"+j.id+"\')\">"+
-      "<div style=\"font-weight:600\">"+(j.clientName||"Unknown")+"</div>"+
-      "<div style=\"font-size:12px;color:#7a8fa6;margin-top:4px\">"+(j.pilot?j.pilot+" \u00b7 ":""+j.estStart?"":"+j.estStart+"":"")+" "+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+" loads</div>"+
-      "</div>";
-  }).join("");
+    var info=(j.pilot?j.pilot+" · ":"")+(j.estStart?j.estStart:"")+"  "+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+" loads";
+    html+='<div class="job-btn" style="border-color:'+c+'" onclick="showJob(\''+j.id+'\')">'+
+      '<div style="font-weight:600">'+(j.clientName||"Unknown")+'</div>'+
+      '<div style="font-size:12px;color:#7a8fa6;margin-top:4px">'+info+'</div>'+
+      '</div>';
+  }
+  ul.innerHTML=html;
 }
 
 function showJob(id){
-  var j=(window.jobs||[]).filter(function(x){return x.id===id;})[0];if(!j)return;
-  window.currentJob=j;showScr("s-detail");
-  var w=document.getElementById("detail-wrap");if(!w)return;
+  var j=(window.jobs||[]).filter(function(x){return x.id===id;})[0];
+  if(!j){return;}
+  window.currentJob=j;
+  showScr("s-detail");
+  var w=document.getElementById("detail-wrap");
+  if(!w){return;}
   var loads=j.loadsArr||[];
-  var loadCards=loads.length?loads.map(function(l,i){
-    return"<div class=\"card\" style=\"border-left:4px solid "+(l.complete?"#4caf50":"#ff9800")+"\">"+
-      "<div style=\"font-weight:600\">Load "+(i+1)+" \u2014 "+(l.chemName||"Unknown")+"</div>"+
-      "<div style=\"font-size:13px;color:#7a8fa6;margin-top:4px\">Container: "+(l.containerId||"?")+" \u00a0 Vol: "+(l.volL||0)+"L \u00a0 Rate: "+(l.rate||0)+"L/min</div>"+
-      "<div style=\"margin-top:8px;font-size:13px\">Status: "+(l.complete?"\u2705 Complete":"\u23f3 Pending")+"</div>"+
-      "</div>";
-  }).join(""):"<div style=\"color:#5a6a7a;text-align:center;padding:20px\">No loads</div>";
-  w.innerHTML="<button class=\"back-btn\" onclick=\"showScr(\'s-jobs\')\">\u2190 Back</button>"+
-    "<div class=\"card\" style=\"margin-top:12px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">"+(j.clientName||"Unknown")+"</div>"+
-    "<div style=\"color:#7a8fa6;font-size:13px\">\ud83d\udcc5 "+(j.schedDate||"No date")+" \u00a0 Status: <span style=\"color:#4a9eff\">"+(j.status||"active")+"</span></div>"+
-    "<div style=\"margin-top:8px;font-size:14px\"><b>Mixer:</b> "+(j.mixerName||"\u2014")+" \u00a0 <b>Pilot:</b> "+(j.pilot||"\u2014")+" \u00a0 <b>Aircraft:</b> "+(j.aircraft||"\u2014")+"</div></div>"+
-    "<div class=\"sec-title\">Loads ("+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+")</div>"+loadCards;
+  var loadHtml="";
+  for(var i=0;i<loads.length;i++){
+    var l=loads[i];
+    var col=l.complete?"#4caf50":"#ff9800";
+    var status=l.complete?"Complete":"Pending";
+    loadHtml+='<div class="card" style="border-left:4px solid '+col+'">'+
+      '<div style="font-weight:600">Load '+(i+1)+' — '+(l.chemName||"Unknown")+'</div>'+
+      '<div style="font-size:13px;color:#7a8fa6;margin-top:4px">Container: '+(l.containerId||"?")+' &nbsp; Vol: '+(l.volL||0)+'L &nbsp; Rate: '+(l.rate||0)+'L/min</div>'+
+      '<div style="margin-top:8px;font-size:13px">Status: '+status+'</div>'+
+      '</div>';
+  }
+  if(!loadHtml){loadHtml='<div style="color:#5a6a7a;text-align:center;padding:20px">No loads</div>';}
+  w.innerHTML='<button class="back-btn" onclick="showScr(\'s-jobs\')">&#8592; Back</button>'+
+    '<div class="card" style="margin-top:12px">'+
+      '<div style="font-size:20px;font-weight:700;margin-bottom:8px">'+(j.clientName||"Unknown")+'</div>'+
+      '<div style="color:#7a8fa6;font-size:13px">&#128197; '+(j.schedDate||"No date")+' &nbsp; Status: <span style="color:#4a9eff">'+(j.status||"active")+'</span></div>'+
+      '<div style="margin-top:8px;font-size:14px"><b>Mixer:</b> '+(j.mixerName||"—")+' &nbsp; <b>Pilot:</b> '+(j.pilot||"—")+' &nbsp; <b>Aircraft:</b> '+(j.aircraft||"—")+'</div>'+
+    '</div>'+
+    '<div class="sec-title">Loads ('+(j.loadsDone||0)+'/'+(j.loadsTotal||0)+')</div>'+loadHtml;
 }
 
-function buildMixerGrid(){var g=document.getElementById("mixer-grid");if(!g)return;g.innerHTML=Object.keys(MIXER_PINS).map(function(n){var p=n.split(" ");return"<div class=\"mixer-btn\" onclick=\"selMixer(\'"+n.replace(/'/g,"\\'")+"\')\"><span>"+p[0]+"</span>"+(p.length>1?" "+p.slice(1).join(""):"")+"</div>";}).join("");}
+function buildMixerGrid(){
+  var g=document.getElementById("mixer-grid");
+  if(!g){return;}
+  var html="";
+  var keys=Object.keys(MIXER_PINS);
+  for(var i=0;i<keys.length;i++){
+    var n=keys[i];
+    var p=n.split(" ");
+    html+='<div class="mixer-btn" onclick="selMixer(\''+n.replace(/'/g,"\\'")+'\')"><span>'+p[0]+'</span'+(p.length>1?" "+p.slice(1).join(""):"")+'></div>';
+  }
+  g.innerHTML=html;
+}
 
-function selMixer(n){_loginMixer=n;_loginPin="";document.querySelectorAll(".mixer-btn").forEach(function(b){b.classList.remove("sel");});try{event.target.closest(".mixer-btn").classList.add("sel");}catch(e){}document.getElementById("pin-section").style.display="block";document.getElementById("all-jobs-btn").style.display="none";document.getElementById("pin-name").textContent=n;drawDots();document.getElementById("pin-err").textContent="";}
+function selMixer(n){
+  _loginMixer=n;_loginPin="";
+  var btns=document.querySelectorAll(".mixer-btn");
+  for(var i=0;i<btns.length;i++){btns[i].classList.remove("sel");}
+  try{if(event.target.closest(".mixer-btn")){event.target.closest(".mixer-btn").classList.add("sel");}}catch(e){}
+  document.getElementById("pin-section").style.display="block";
+  document.getElementById("all-jobs-btn").style.display="none";
+  document.getElementById("pin-name").textContent=n;
+  drawDots();
+  document.getElementById("pin-err").textContent="";
+}
 
-function selAllJobs(){_loginMixer="ALL";try{localStorage.setItem("at_mixer","ALL");}catch(e){}document.getElementById("pin-section").style.display="none";doLogin("ALL");}
+function selAllJobs(){
+  _loginMixer="ALL";
+  try{localStorage.setItem("at_mixer","ALL");}catch(e){}
+  document.getElementById("pin-section").style.display="none";
+  doLogin("ALL");
+}
 
-function numTap(k){if(k==="ok"){if(MIXER_PINS[_loginMixer]===_loginPin){try{localStorage.setItem("at_mixer",_loginMixer);}catch(e){}doLogin(_loginMixer);}else{document.getElementById("pin-err").textContent="Wrong PIN \u2014 try again";_loginPin="";drawDots();}return;}if(!_loginMixer)return;if(k==="X"){_loginPin=_loginPin.slice(0,-1);drawDots();return;}if(_loginPin.length>=4)return;_loginPin+=k;drawDots();}
+function numTap(k){
+  if(k==="ok"){
+    if(MIXER_PINS[_loginMixer]===_loginPin){
+      try{localStorage.setItem("at_mixer",_loginMixer);}catch(e){}
+      doLogin(_loginMixer);
+    }else{
+      document.getElementById("pin-err").textContent="Wrong PIN — try again";
+      _loginPin="";drawDots();
+    }
+    return;
+  }
+  if(!_loginMixer){return;}
+  if(k==="X"){_loginPin=_loginPin.slice(0,-1);drawDots();return;}
+  if(_loginPin.length>=4){return;}
+  _loginPin+=k;drawDots();
+}
 
-function drawDots(){for(var i=0;i<4;i++){var d=document.getElementById("pd"+i);if(d){d.textContent=_loginPin[i]?"\u25cf":"";d.className="pin-dot"+(_loginPin[i]?" filled":"");}}}
+function drawDots(){
+  for(var i=0;i<4;i++){
+    var d=document.getElementById("pd"+i);
+    if(d){d.textContent=_loginPin[i]?"●":"";d.className="pin-dot"+(_loginPin[i]?" filled":"");}
+  }
+}
 
-function doLogin(name){window.currentMixer=name;document.getElementById("login-screen").style.display="none";showScr("s-jobs");document.getElementById("hdr-sub").textContent="Signed in"+(name!=="ALL"?" \u2014 "+name:"");fetchJobs();}
+function doLogin(name){
+  window.currentMixer=name;
+  document.getElementById("login-screen").style.display="none";
+  showScr("s-jobs");
+  document.getElementById("hdr-sub").textContent="Signed in"+(name!=="ALL"?" — "+name:"");
+  fetchJobs();
+}
 
 document.addEventListener("DOMContentLoaded",function(){
-  var dd=document.getElementById("pin-display");if(dd){dd.innerHTML="";for(var i=0;i<4;i++){var d=document.createElement("div");d.id="pd"+i;d.className="pin-dot";dd.appendChild(d);}}
+  var dd=document.getElementById("pin-display");
+  if(dd){dd.innerHTML="";for(var i=0;i<4;i++){var d=document.createElement("div");d.id="pd"+i;d.className="pin-dot";dd.appendChild(d);}}
   buildMixerGrid();
   fetchJobs();
-  var saved=null;try{saved=localStorage.getItem("at_mixer");}catch(e){}
+  var saved=null;
+  try{saved=localStorage.getItem("at_mixer");}catch(e){}
   if(saved==="ALL"){_loginMixer="ALL";doLogin("ALL");return;}
-  if(saved&&MIXER_PINS[saved]){_loginMixer=saved;document.getElementById("pin-section").style.display="block";document.getElementById("pin-name").textContent=saved;buildMixerGrid();document.querySelectorAll(".mixer-btn").forEach(function(b){if(b.textContent.trim().startsWith(saved.split(" ")[0]))b.classList.add("sel");});drawDots();doLogin(saved);}
+  if(saved&&MIXER_PINS[saved]){
+    _loginMixer=saved;
+    document.getElementById("pin-section").style.display="block";
+    document.getElementById("pin-name").textContent=saved;
+    buildMixerGrid();
+    var btns=document.querySelectorAll(".mixer-btn");
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].textContent.trim().indexOf(saved.split(" ")[0])===0){btns[i].classList.add("sel");}
+    }
+    drawDots();
+    doLogin(saved);
+  }
 });
 </script>
 </body>
