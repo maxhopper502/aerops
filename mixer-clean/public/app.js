@@ -52,7 +52,7 @@ function fsUpdate(docId, data) {
   });
 }
 function fetchJobs() {
-  fetch(FS_BASE + '/jobs?pageSize=200&key=' + FS_KEY, { signal: AbortSignal.timeout(3000) })
+  fetch(FS_BASE + '/jobs?pageSize=200&key=' + FS_KEY, { signal: AbortSignal.timeout(10000) })
     .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(d){
       if (d.error) throw new Error(d.error.message);
@@ -63,7 +63,8 @@ function fetchJobs() {
     })
     .catch(function(e){
       var b = document.getElementById('sync-badge');
-      b.textContent = 'Err:' + e.message.slice(0,15); b.className = 'sync conn';
+      b.textContent = 'Retrying...'; b.className = 'sync ok';
+      setTimeout(fetchJobs, 5000);
     });
 }
 fetchJobs();
