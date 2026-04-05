@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>AeroOps — Mixer Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-text-size-adjust:100%}
+body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
+.hdr{background:#1a365d;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.hdr-left{display:flex;flex-direction:column}
+.hdr-title{font-size:17px;font-weight:700;letter-spacing:-0.3px}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,0.7);margin-top:1px}
+.sync-badge{background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+.screen{display:none;padding:16px;max-width:600px;margin:0 auto}
+.screen.active{display:block}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.06)}
+.mixer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mixer-btn{background:#fff;border:2px solid #e2e8f0;border-radius:12px;padding:20px 12px;text-align:center;font-size:15px;font-weight:600;color:#1a365d;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.mixer-btn:active,.mixer-btn.sel{background:#1a365d;color:#fff;border-color:#1a365d}
+.all-jobs-btn{display:block;width:100%;background:#ccf5e0;border:2px solid #2ecc87;border-radius:12px;color:#1a365d;font-weight:700;font-size:15px;padding:16px;margin-bottom:16px;cursor:pointer;text-align:center}
+.pin-section{margin:16px 0;display:none}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:20px 0}
+.pin-dot{width:18px;height:18px;border-radius:50%;background:#e2e8f0;transition:background 0.1s}
+.pin-dot.filled{background:#1a365d}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:280px;margin:0 auto}
+.pk{background:#fff;border:2px solid #e2e8f0;border-radius:10px;font-size:22px;font-weight:600;color:#1a365d;padding:18px;cursor:pointer;text-align:center;transition:all 0.1s;user-select:none;-webkit-tap-highlight-color:transparent}
+.pk:active{background:#f1f5f9;border-color:#cbd5e1}
+.pk.clr{font-size:14px;font-weight:500;color:#64748b}
+.pin-err{text-align:center;color:#e53e3e;font-size:13px;margin-top:10px;min-height:20px}
+.job-btn{background:#fff;border-radius:12px;border:2px solid #e2e8f0;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.15s}
+.job-btn:active{background:#f7fafc;border-color:#1a365d}
+.sec-title{font-size:13px;font-weight:600;color:#7a8fa6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;margin-top:20px}
+.back-btn{background:none;border:none;color:#4a9eff;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:4px}
+#login-screen{position:fixed;inset:0;background:#f8f9fa;z-index:200;display:flex;flex-direction:column;justify-content:center}
+.login-inner{max-width:400px;margin:0 auto;padding:20px;width:100%}
+.login-logo{text-align:center;margin-bottom:30px}
+.login-logo-icon{font-size:48px;margin-bottom:8px}
+.login-logo h1{font-size:24px;font-weight:700;color:#1a365d}
+.login-logo p{font-size:13px;color:#7a8fa6;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-inner">
+    <div class="login-logo">
+      <div class="login-logo-icon">&#9992;&#65039;</div>
+      <h1>AeroOps Mixer</h1>
+      <p>Select your name to begin</p>
+    </div>
+    <div id="mixer-grid" class="mixer-grid"></div>
+    <div id="all-jobs-btn" class="all-jobs-btn" onclick="selAllJobs()">&#128065; &nbsp; View All Jobs</div>
+    <div id="pin-section" class="pin-section">
+      <div style="text-align:center;font-size:14px;font-weight:600;color:#1a365d;margin-bottom:8px" id="pin-name"></div>
+      <div id="pin-display" class="pin-dots"></div>
+      <div class="numpad">
+        <div class="pk" onclick="numTap('1')">1</div>
+        <div class="pk" onclick="numTap('2')">2</div>
+        <div class="pk" onclick="numTap('3')">3</div>
+        <div class="pk" onclick="numTap('4')">4</div>
+        <div class="pk" onclick="numTap('5')">5</div>
+        <div class="pk" onclick="numTap('6')">6</div>
+        <div class="pk" onclick="numTap('7')">7</div>
+        <div class="pk" onclick="numTap('8')">8</div>
+        <div class="pk" onclick="numTap('9')">9</div>
+        <div class="pk clr" onclick="numTap('X')">&#9003;</div>
+        <div class="pk" onclick="numTap('0')">0</div>
+        <div class="pk" style="color:#1a365d" onclick="numTap('ok')">&#10003;</div>
+      </div>
+      <div id="pin-err" class="pin-err"></div>
+    </div>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">AeroOps</div>
+    <div class="hdr-sub" id="hdr-sub">Mixer Operations</div>
+  </div>
+  <div class="sync-badge" id="sync-badge">&#8230;</div>
+</div>
+
+<div id="s-jobs" class="screen active">
+  <div id="jobs-list"></div>
+</div>
+
+<div id="s-detail" class="screen">
+  <div id="detail-wrap"></div>
+</div>
+
+<script>
+var MIXER_PINS={"Ben Simcock":"1111","Robert Proud":"2222","Amber Meyers":"3333","Shaun Dempsey":"4444","Adam Sullivan":"5555","Will Piip":"6666","Craig Dawson":"7777"};
+var FS_KEY="AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI";
+var FS_BASE="https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents";
+var _loginMixer="",_loginPin="",_fetchTimer=null;
+
+function showScr(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});document.getElementById(id).classList.add("active");}
+
+function fetchJobs(){
+  var b=document.getElementById("sync-badge");
+  if(b){b.textContent="Syncing...";}
+  var controller=new AbortController();
+  _fetchTimer=setTimeout(function(){
+    controller.abort();
+    var b=document.getElementById("sync-badge");
+    if(b){b.textContent="Timeout";}
+  },15000);
+  fetch(FS_BASE+"/jobs?pageSize=200&key="+FS_KEY,{
+    signal:controller.signal,
+    headers:{"Accept":"application/json"}
+  })
+  .then(function(r){clearTimeout(_fetchTimer);if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+  .then(function(d){
+    clearTimeout(_fetchTimer);
+    if(d.error)throw new Error(d.error.message||"err");
+    window.jobs=(d.documents||[]).map(fsDoc);
+    var b=document.getElementById("sync-badge");
+    if(b){b.textContent="Live";b.className="sync-badge";}
+    if(document.getElementById("s-jobs").classList.contains("active"))renderJobs();
+  })
+  .catch(function(e){
+    clearTimeout(_fetchTimer);
+    var b=document.getElementById("sync-badge");
+    if(b){b.textContent=e.name==="AbortError"?"Timeout":"Error";}
+  });
+}
+
+function fsDoc(doc){
+  if(!doc||!doc.fields)return{};
+  var f=doc.fields;
+  var sched=(f.schedule&&f.schedule.mapValue)?f.schedule.mapValue.fields:{};
+  var mp=(f.mixProgress&&f.mixProgress.mapValue)?f.mixProgress.mapValue.fields:{};
+  return{
+    id:doc.name.split("/").pop(),
+    mixerName:(sched.mixer?(sched.mixer.stringValue||""):""),
+    schedDate:(sched.scheduledDate?(sched.scheduledDate.stringValue||""):""),
+    pilot:(sched.pilot?(sched.pilot.stringValue||""):""),
+    aircraft:(sched.aircraft?(sched.aircraft.stringValue||""):""),
+    estStart:(sched.estStart?(sched.estStart.stringValue||""):""),
+    status:(f.status?(f.status.stringValue||"active"):"active"),
+    clientName:(f.clientName?(f.clientName.stringValue||""):""),
+    loadsArr:(f.loads&&f.loads.arrayValue&&f.loads.arrayValue.values)?f.loads.arrayValue.values.map(function(l){
+      var ff=(l.mapValue&&l.mapValue.fields)||{};
+      return{loadId:(ff.loadId?(ff.loadId.stringValue||""):""),containerId:(ff.containerId?(ff.containerId.stringValue||""):""),chemName:(ff.chemName?(ff.chemName.stringValue||""):""),volL:(ff.volL?(ff.volL.doubleValue||ff.volL.integerValue||0):0),rate:(ff.rate?(ff.rate.doubleValue||ff.rate.integerValue||0):0),complete:!!(ff.complete&&ff.complete.booleanValue)};
+    }):[],
+    pilotHold:!!(f.pilotHold&&f.pilotHold.booleanValue),
+    loadsDone:(mp.loadsComplete?(parseFloat(mp.loadsComplete.doubleValue||mp.loadsComplete.integerValue)||0):0),
+    loadsTotal:(mp.loadsTotal?(parseFloat(mp.loadsTotal.doubleValue||mp.loadsTotal.integerValue)||0):0)
+  };
+}
+
+function renderJobs(){
+  var name=window.currentMixer||"";
+  var today=new Date().toISOString().slice(0,10);
+  var list=(window.jobs||[]).filter(function(j){
+    if(j.schedDate&&j.schedDate!==today)return false;
+    if(j.status==="invoiced")return false;
+    if(name&&name!=="ALL"&&j.mixerName!==name)return false;
+    return true;
+  });
+  list.sort(function(a,b){return(b.schedDate||"").localeCompare(a.schedDate||"");});
+  var ul=document.getElementById("jobs-list");if(!ul)return;
+  if(!list.length){ul.innerHTML='<div style="text-align:center;padding:60px 20px;color:#5a6a7a">No jobs for today</div>';return;}
+  ul.innerHTML=list.map(function(j){
+    var c={active:"#4a9eff",completed:"#4caf50",cancelled:"#f44336"}[j.status]||"#4a9eff";
+    return"<div class=\"job-btn\" style=\"border-color:"+c+"\" onclick=\"showJob(\'"+j.id+"\')\">"+
+      "<div style=\"font-weight:600\">"+(j.clientName||"Unknown")+"</div>"+
+      "<div style=\"font-size:12px;color:#7a8fa6;margin-top:4px\">"+(j.pilot?j.pilot+" \u00b7 ":""+j.estStart?"":"+j.estStart+"":"")+" "+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+" loads</div>"+
+      "</div>";
+  }).join("");
+}
+
+function showJob(id){
+  var j=(window.jobs||[]).filter(function(x){return x.id===id;})[0];if(!j)return;
+  window.currentJob=j;showScr("s-detail");
+  var w=document.getElementById("detail-wrap");if(!w)return;
+  var loads=j.loadsArr||[];
+  var loadCards=loads.length?loads.map(function(l,i){
+    return"<div class=\"card\" style=\"border-left:4px solid "+(l.complete?"#4caf50":"#ff9800")+"\">"+
+      "<div style=\"font-weight:600\">Load "+(i+1)+" \u2014 "+(l.chemName||"Unknown")+"</div>"+
+      "<div style=\"font-size:13px;color:#7a8fa6;margin-top:4px\">Container: "+(l.containerId||"?")+" \u00a0 Vol: "+(l.volL||0)+"L \u00a0 Rate: "+(l.rate||0)+"L/min</div>"+
+      "<div style=\"margin-top:8px;font-size:13px\">Status: "+(l.complete?"\u2705 Complete":"\u23f3 Pending")+"</div>"+
+      "</div>";
+  }).join(""):"<div style=\"color:#5a6a7a;text-align:center;padding:20px\">No loads</div>";
+  w.innerHTML="<button class=\"back-btn\" onclick=\"showScr(\'s-jobs\')\">\u2190 Back</button>"+
+    "<div class=\"card\" style=\"margin-top:12px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">"+(j.clientName||"Unknown")+"</div>"+
+    "<div style=\"color:#7a8fa6;font-size:13px\">\ud83d\udcc5 "+(j.schedDate||"No date")+" \u00a0 Status: <span style=\"color:#4a9eff\">"+(j.status||"active")+"</span></div>"+
+    "<div style=\"margin-top:8px;font-size:14px\"><b>Mixer:</b> "+(j.mixerName||"\u2014")+" \u00a0 <b>Pilot:</b> "+(j.pilot||"\u2014")+" \u00a0 <b>Aircraft:</b> "+(j.aircraft||"\u2014")+"</div></div>"+
+    "<div class=\"sec-title\">Loads ("+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+")</div>"+loadCards;
+}
+
+function buildMixerGrid(){var g=document.getElementById("mixer-grid");if(!g)return;g.innerHTML=Object.keys(MIXER_PINS).map(function(n){var p=n.split(" ");return"<div class=\"mixer-btn\" onclick=\"selMixer(\'"+n.replace(/'/g,"\\'")+"\')\"><span>"+p[0]+"</span>"+(p.length>1?" "+p.slice(1).join(""):"")+"</div>";}).join("");}
+
+function selMixer(n){_loginMixer=n;_loginPin="";document.querySelectorAll(".mixer-btn").forEach(function(b){b.classList.remove("sel");});try{event.target.closest(".mixer-btn").classList.add("sel");}catch(e){}document.getElementById("pin-section").style.display="block";document.getElementById("all-jobs-btn").style.display="none";document.getElementById("pin-name").textContent=n;drawDots();document.getElementById("pin-err").textContent="";}
+
+function selAllJobs(){_loginMixer="ALL";try{localStorage.setItem("at_mixer","ALL");}catch(e){}document.getElementById("pin-section").style.display="none";doLogin("ALL");}
+
+function numTap(k){if(k==="ok"){if(MIXER_PINS[_loginMixer]===_loginPin){try{localStorage.setItem("at_mixer",_loginMixer);}catch(e){}doLogin(_loginMixer);}else{document.getElementById("pin-err").textContent="Wrong PIN \u2014 try again";_loginPin="";drawDots();}return;}if(!_loginMixer)return;if(k==="X"){_loginPin=_loginPin.slice(0,-1);drawDots();return;}if(_loginPin.length>=4)return;_loginPin+=k;drawDots();}
+
+function drawDots(){for(var i=0;i<4;i++){var d=document.getElementById("pd"+i);if(d){d.textContent=_loginPin[i]?"\u25cf":"";d.className="pin-dot"+(_loginPin[i]?" filled":"");}}}
+
+function doLogin(name){window.currentMixer=name;document.getElementById("login-screen").style.display="none";showScr("s-jobs");document.getElementById("hdr-sub").textContent="Signed in"+(name!=="ALL"?" \u2014 "+name:"");fetchJobs();}
+
+document.addEventListener("DOMContentLoaded",function(){
+  var dd=document.getElementById("pin-display");if(dd){dd.innerHTML="";for(var i=0;i<4;i++){var d=document.createElement("div");d.id="pd"+i;d.className="pin-dot";dd.appendChild(d);}}
+  buildMixerGrid();
+  fetchJobs();
+  var saved=null;try{saved=localStorage.getItem("at_mixer");}catch(e){}
+  if(saved==="ALL"){_loginMixer="ALL";doLogin("ALL");return;}
+  if(saved&&MIXER_PINS[saved]){_loginMixer=saved;document.getElementById("pin-section").style.display="block";document.getElementById("pin-name").textContent=saved;buildMixerGrid();document.querySelectorAll(".mixer-btn").forEach(function(b){if(b.textContent.trim().startsWith(saved.split(" ")[0]))b.classList.add("sel");});drawDots();doLogin(saved);}
+});
+</script>
+</body>
+</html>
