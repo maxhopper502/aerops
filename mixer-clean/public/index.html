@@ -41,6 +41,7 @@ body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
 .login-logo-icon{font-size:48px;margin-bottom:8px}
 .login-logo h1{font-size:24px;font-weight:700;color:#1a365d}
 .login-logo p{font-size:13px;color:#7a8fa6;margin-top:4px}
+#err-banner{background:#fff3f3;border:2px solid #f44336;border-radius:10px;padding:12px 16px;margin:16px auto;max-width:600px;font-size:13px;color:#c62828;display:none;word-break:break-all}
 </style>
 </head>
 <body>
@@ -84,6 +85,8 @@ body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
   <div class="sync-badge" id="sync-badge">...</div>
 </div>
 
+<div id="err-banner"></div>
+
 <div id="s-jobs" class="screen active">
   <div id="jobs-list"></div>
 </div>
@@ -103,6 +106,41 @@ function showScr(id){
   document.getElementById(id).classList.add("active");
 }
 
+function showErr(msg){
+  var b=document.getElementById("err-banner");
+  if(b){b.style.display="block";b.textContent="Error: "+msg;}
+}
+
+function sv(v){return v&&v.stringValue?v.stringValue:"";}
+function nv(v){return v?(parseFloat(v.doubleValue||v.integerValue)||0):0;}
+
+function fsDoc(doc){
+  try{
+    if(!doc||!doc.fields){return {};}
+    var f=doc.fields;
+    var sched=(f.schedule&&f.schedule.mapValue&&f.schedule.mapValue.fields)?f.schedule.mapValue.fields:{};
+    var mp=(f.mixProgress&&f.mixProgress.mapValue&&f.mixProgress.mapValue.fields)?f.mixProgress.mapValue.fields:{};
+    var la=f.loads&&f.loads.arrayValue&&f.loads.arrayValue.values?f.loads.arrayValue.values:[];
+    return{
+      id:doc.name.split("/").pop(),
+      mixerName:sv(sched.mixer),
+      schedDate:sv(sched.scheduledDate),
+      pilot:sv(sched.pilot),
+      aircraft:sv(sched.aircraft),
+      estStart:sv(sched.estStart),
+      status:sv(f.status)||"active",
+      clientName:sv(f.clientName),
+      loadsArr:la.map(function(l){
+        var ff=l&&l.mapValue&&l.mapValue.fields?l.mapValue.fields:{};
+        return{loadId:sv(ff.loadId),containerId:sv(ff.containerId),chemName:sv(ff.chemName),volL:nv(ff.volL),rate:nv(ff.rate),complete:!!(ff.complete&&ff.complete.booleanValue)};
+      }),
+      pilotHold:!!(f.pilotHold&&f.pilotHold.booleanValue),
+      loadsDone:nv(mp.loadsComplete),
+      loadsTotal:nv(mp.loadsTotal)
+    };
+  }catch(e){return{};}
+}
+
 function fetchJobs(){
   var b=document.getElementById("sync-badge");
   if(b){b.textContent="Syncing...";}
@@ -111,60 +149,31 @@ function fetchJobs(){
     controller.abort();
     var b=document.getElementById("sync-badge");
     if(b){b.textContent="Timeout";}
+    showErr("Request timed out after 15 seconds");
   },15000);
-  fetch(FS_BASE+"/jobs?pageSize=200&key="+FS_KEY,{
-    signal:controller.signal,
-    headers:{"Accept":"application/json"}
-  })
+  fetch(FS_BASE+"/jobs?pageSize=200&key="+FS_KEY,{signal:controller.signal})
   .then(function(r){
     clearTimeout(timer);
-    if(!r.ok){throw new Error("HTTP "+r.status);}
-    return r.json();
+    if(!r.ok){throw new Error("HTTP "+r.status+" ("+r.statusText+")");}
+    return r.text();
   })
-  .then(function(d){
+  .then(function(text){
     clearTimeout(timer);
-    if(d.error){throw new Error(d.error.message||"Firestore error");}
+    var d;
+    try{d=JSON.parse(text);}catch(e){throw new Error("Invalid JSON response");}
+    if(d.error){throw new Error("Firestore: "+(d.error.message||"Unknown error"));}
     window.jobs=(d.documents||[]).map(fsDoc);
     var b=document.getElementById("sync-badge");
     if(b){b.textContent="Live";}
+    document.getElementById("err-banner").style.display="none";
     if(document.getElementById("s-jobs").classList.contains("active")){renderJobs();}
   })
   .catch(function(e){
     clearTimeout(timer);
     var b=document.getElementById("sync-badge");
     if(b){b.textContent=e.name==="AbortError"?"Timeout":"Error";}
+    showErr(e.message||e.name||"Unknown error");
   });
-}
-
-function fsDoc(doc){
-  if(!doc||!doc.fields){return {};}
-  var f=doc.fields;
-  var sched=(f.schedule&&f.schedule.mapValue)?f.schedule.mapValue.fields:{};
-  var mp=(f.mixProgress&&f.mixProgress.mapValue)?f.mixProgress.mapValue.fields:{};
-  return{
-    id:doc.name.split("/").pop(),
-    mixerName:(sched.mixer?(sched.mixer.stringValue||""):""),
-    schedDate:(sched.scheduledDate?(sched.scheduledDate.stringValue||""):""),
-    pilot:(sched.pilot?(sched.pilot.stringValue||""):""),
-    aircraft:(sched.aircraft?(sched.aircraft.stringValue||""):""),
-    estStart:(sched.estStart?(sched.estStart.stringValue||""):""),
-    status:(f.status?(f.status.stringValue||"active"):"active"),
-    clientName:(f.clientName?(f.clientName.stringValue||""):""),
-    loadsArr:(f.loads&&f.loads.arrayValue&&f.loads.arrayValue.values)?f.loads.arrayValue.values.map(function(l){
-      var ff=(l.mapValue&&l.mapValue.fields)||{};
-      return{
-        loadId:(ff.loadId?(ff.loadId.stringValue||""):""),
-        containerId:(ff.containerId?(ff.containerId.stringValue||""):""),
-        chemName:(ff.chemName?(ff.chemName.stringValue||""):""),
-        volL:(ff.volL?(parseFloat(ff.volL.doubleValue||ff.volL.integerValue)||0):0),
-        rate:(ff.rate?(parseFloat(ff.rate.doubleValue||ff.rate.integerValue)||0):0),
-        complete:!!(ff.complete&&ff.complete.booleanValue)
-      };
-    }):[],
-    pilotHold:!!(f.pilotHold&&f.pilotHold.booleanValue),
-    loadsDone:(mp.loadsComplete?(parseFloat(mp.loadsComplete.doubleValue||mp.loadsComplete.integerValue)||0):0),
-    loadsTotal:(mp.loadsTotal?(parseFloat(mp.loadsTotal.doubleValue||mp.loadsTotal.integerValue)||0):0)
-  };
 }
 
 function renderJobs(){
