@@ -46,13 +46,13 @@ function fsUpdate(docId, data) {
   Object.keys(data).forEach(function(k){ fields[k] = fsToVal(data[k]); });
   var mask = Object.keys(data).map(function(k){ return 'updateMask.fieldPaths=' + k; }).join('&');
   return fetch(FS_BASE + '/jobs/' + docId + '?' + mask + '&key=' + FS_KEY, {
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(3000),
     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: fields })
   });
 }
 function fetchJobs() {
-  fetch(FS_BASE + '/jobs?pageSize=200&key=' + FS_KEY, { signal: AbortSignal.timeout(10000) })
+  fetch(FS_BASE + '/jobs?pageSize=200&key=' + FS_KEY, { signal: AbortSignal.timeout(3000) })
     .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(d){
       if (d.error) throw new Error(d.error.message);
@@ -724,7 +724,7 @@ window.clearPilotHold=function(){
   var j=jobs.find(function(x){return x.id===jobId;});
   if(!j) return;
   fetch(FS_BASE+'/jobs/'+jobId+'?updateMask.fieldPaths=pilotHold&key='+FS_KEY,{
-    signal:AbortSignal.timeout(10000),
+    signal:AbortSignal.timeout(3000),
     method:'PATCH',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({fields:{pilotHold:{booleanValue:false}}})
