@@ -1,1320 +1,429 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>AeroOps — Mixer Ops</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Aerotech Mixer</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-text-size-adjust:100%}
-body{background:#f8f9fa;color:#1a365d;min-height:100vh;overflow-x:hidden}
-.hdr{background:#1a365d;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
-.hdr-left{display:flex;flex-direction:column}
-.hdr-title{font-size:17px;font-weight:700;letter-spacing:-0.3px}
-.hdr-sub{font-size:12px;color:rgba(255,255,255,0.7);margin-top:1px}
-.sync-badge{background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
-.screen{display:none;padding:16px;max-width:600px;margin:0 auto}
+:root{--navy:#1a3a5c;--blue:#2563eb;--green:#16a34a;--orange:#e67e22;--red:#dc2626;--gold:#ca8a04;--muted:#6b7280;--bg:#f0f2f5;--card:#fff;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh}
+.hdr{background:var(--navy);color:#fff;padding:14px 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:1.05rem;font-weight:800;flex:1}
+.hdr-sub{font-size:.72rem;opacity:.75}
+.hdr-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;cursor:pointer}
+.sync{font-size:.65rem;background:rgba(255,255,255,.12);border-radius:10px;padding:2px 8px;margin-left:auto}
+.sync.ok{color:#86efac}.sync.conn{color:#fcd34d}
+.screen{display:none;padding:16px;max-width:520px;margin:0 auto}
 .screen.active{display:block}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.06)}
-.mixer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.mixer-btn{background:#fff;border:2px solid #e2e8f0;border-radius:12px;padding:20px 12px;text-align:center;font-size:15px;font-weight:600;color:#1a365d;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-tap-highlight-color:transparent}
-.mixer-btn:active,.mixer-btn.sel{background:#1a365d;color:#fff;border-color:#1a365d}
-.all-jobs-btn{display:block;width:100%;background:#ccf5e0;border:2px solid #2ecc87;border-radius:12px;color:#1a365d;font-weight:700;font-size:15px;padding:16px;margin-bottom:16px;cursor:pointer;text-align:center}
-.pin-section{margin:16px 0;display:none}
-.pin-dots{display:flex;justify-content:center;gap:14px;margin:20px 0}
-.pin-dot{width:18px;height:18px;border-radius:50%;background:#e2e8f0;transition:background 0.1s}
-.pin-dot.filled{background:#1a365d}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:280px;margin:0 auto}
-.pk{background:#fff;border:2px solid #e2e8f0;border-radius:10px;font-size:22px;font-weight:600;color:#1a365d;padding:18px;cursor:pointer;text-align:center;transition:all 0.1s;user-select:none;-webkit-tap-highlight-color:transparent}
-.pk:active{background:#f1f5f9;border-color:#cbd5e1}
-.pk.clr{font-size:14px;font-weight:500;color:#64748b}
-.pin-err{text-align:center;color:#e53e3e;font-size:13px;margin-top:10px;min-height:20px}
-.job-btn{background:#fff;border-radius:12px;border:2px solid #e2e8f0;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.15s}
-.job-btn:active{background:#f7fafc;border-color:#1a365d}
-.sec-title{font-size:13px;font-weight:600;color:#7a8fa6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;margin-top:20px}
-.back-btn{background:none;border:none;color:#4a9eff;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:4px}
-#login-screen{position:fixed;inset:0;background:#f8f9fa;z-index:200;display:flex;flex-direction:column;justify-content:center}
-.login-inner{max-width:400px;margin:0 auto;padding:20px;width:100%}
-.login-logo{text-align:center;margin-bottom:30px}
-.login-logo-icon{font-size:48px;margin-bottom:8px}
-.login-logo h1{font-size:24px;font-weight:700;color:#1a365d}
-.login-logo p{font-size:13px;color:#7a8fa6;margin-top:4px}
-#err-banner{background:#fff3f3;border:2px solid #f44336;border-radius:10px;padding:12px 16px;margin:16px auto;max-width:600px;font-size:13px;color:#c62828;display:none;word-break:break-all}
-#err-banner.visible{display:block}
+.login-wrap{display:flex;flex-direction:column;align-items:center;padding:32px 16px;gap:14px}
+.login-logo{font-size:3rem}
+.login-title{font-size:1.3rem;font-weight:800;color:var(--navy)}
+.mixer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:340px}
+.mixer-btn{background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:14px 10px;cursor:pointer;font-weight:700;font-size:.9rem;color:var(--navy);text-align:center;transition:.15s}
+.mixer-btn.sel{border-color:var(--blue);background:#eff6ff;color:var(--blue)}
+.pin-row{display:flex;gap:10px;justify-content:center}
+.pin-dot{width:44px;height:52px;background:#fff;border:2px solid #e5e7eb;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:var(--navy);transition:.15s}
+.pin-dot.filled{border-color:var(--navy);background:#f0f4ff}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:260px;margin:0 auto;padding-top:4px}
+.num-btn{background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:16px;font-size:1.2rem;font-weight:700;cursor:pointer;color:var(--navy);transition:.1s}
+.num-btn:active{background:#e5e7eb}
+.num-btn.del{color:var(--red)}
+.card{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sec-title{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.job-card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;border-left:5px solid #dde1e8}
+.job-card.spray{border-left-color:#2563eb}
+.job-card.spread{border-left-color:#ca8a04}
+.job-card.misting{border-left-color:#7c3aed}
+.job-card.done{opacity:.65;border-left-color:#16a34a}
+.jc-client{font-weight:800;font-size:.95rem;color:var(--navy)}
+.jc-detail{font-size:.75rem;color:var(--muted);margin-top:2px}
+.jc-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.tag{font-size:.67rem;padding:3px 9px;border-radius:10px;font-weight:700;background:#f3f4f6;color:#374151}
+.tag.blue{background:#dbeafe;color:#1e40af}
+.tag.gold{background:#fef9c3;color:#854d0e}
+.tag.purple{background:#ede9fe;color:#6d28d9}
+.lp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.lp-cell{background:#f8fafb;border-radius:9px;padding:10px;text-align:center}
+.lp-val{font-size:1.2rem;font-weight:800;color:var(--navy)}
+.lp-lbl{font-size:.63rem;color:var(--muted);margin-top:2px;font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.tbl th{text-align:left;font-size:.67rem;color:var(--muted);font-weight:700;padding:4px 2px;border-bottom:1px solid #f0f2f5}
+.tbl td{padding:7px 2px;border-bottom:1px solid #f5f5f5;vertical-align:top}
+.lb{background:#fff;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.lb-hdr{padding:12px 14px;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.92rem}
+.lb-hdr.spray{background:var(--blue)}
+.lb-hdr.spread{background:var(--gold)}
+.lb-hdr.misting{background:#7c3aed}
+.lb-body{padding:12px 14px}
+.pr{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f5f5f5;gap:10px}
+.pr:last-child{border-bottom:none}
+.pr-info{flex:1}
+.pr-name{font-weight:700;font-size:.9rem;color:var(--navy)}
+.pr-amt{font-size:.85rem;font-weight:700;color:var(--blue);margin-top:2px}
+.pr-containers{font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.5}
+.pr-containers .open{color:var(--orange);font-weight:700}
+.pr-containers .leftover{color:var(--green);font-weight:700}
+.pr-check{width:38px;height:38px;border-radius:50%;border:2.5px solid #dde1e8;background:none;cursor:pointer;font-size:1.1rem;flex-shrink:0;transition:.15s;display:flex;align-items:center;justify-content:center}
+.pr-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.mx-bg{background:#0f1421;padding:14px;max-width:520px;margin:0 auto}
+.mx-back-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;font-size:.82rem;font-weight:700;color:#94a3b8;cursor:pointer;margin-bottom:12px;display:inline-block}
+.mx-job-card{background:#1e2433;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid rgba(255,255,255,.07)}
+.mx-job-name{font-weight:900;font-size:.98rem;color:#f1f5f9;margin-bottom:8px}
+.mx-job-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mx-job-lbl{font-size:.6rem;font-weight:700;color:#4b5a7a;text-transform:uppercase;letter-spacing:.5px}
+.mx-job-val{font-size:.88rem;font-weight:700;color:#cbd5e1;margin-top:1px}
+.mx-pbar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin:6px 0 3px}
+.mx-pbar-fill{height:100%;background:#3b82f6;border-radius:3px;transition:.3s}
+.mx-pbar-lbl{font-size:.68rem;color:#4b5a7a}
+.mx-load-hdr{border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.mx-load-hdr.spray{background:linear-gradient(135deg,#1d4ed8,#2563eb)}
+.mx-load-hdr.spread{background:linear-gradient(135deg,#92400e,#b45309)}
+.mx-load-hdr.misting{background:linear-gradient(135deg,#5b21b6,#7c3aed)}
+.mx-load-title{font-weight:900;font-size:1rem;color:#fff}
+.mx-load-sub{font-size:.75rem;color:rgba(255,255,255,.7);font-weight:600}
+.mx-prod{background:#1e2433;border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07)}
+.mx-prod.done-prod{opacity:.45}
+.mx-prod-name{font-size:.68rem;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.mx-prod-amt{font-size:1.65rem;font-weight:900;color:#f1f5f9;line-height:1;display:inline}
+.mx-prod-unit{font-size:.85rem;font-weight:600;color:#64748b;margin-left:5px}
+.mx-containers{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;font-size:.82rem;color:#64748b;line-height:1.9}
+.mx-containers .copen{color:#f97316;font-weight:700}
+.mx-containers .cleft{color:#4ade80;font-weight:600}
+.mx-containers .cshort{color:#f87171;font-weight:700;display:block;margin-top:4px;padding:5px 9px;background:rgba(248,113,113,.1);border-radius:7px}
+.mx-add-btn{width:100%;margin-top:11px;padding:12px;border-radius:9px;border:none;font-weight:800;font-size:.9rem;cursor:pointer;transition:.15s}
+.mx-add-btn.add{background:#2563eb;color:#fff}
+.mx-add-btn.added{background:#166534;color:#fff}
+.mx-load-btn{width:100%;padding:16px;border-radius:12px;border:none;font-weight:900;font-size:1.05rem;cursor:pointer;margin-top:10px;letter-spacing:.2px}
+.mx-load-btn.spray{background:#2563eb;color:#fff}
+.mx-load-btn.spread{background:#b45309;color:#fff}
+.mx-load-btn.misting{background:#7c3aed;color:#fff}
+.mx-load-btn:disabled{background:#1e2433;color:#374151;cursor:not-allowed;border:1px solid rgba(255,255,255,.06)}
+.mx-remaining{background:#1e2433;border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07)}
+.mx-rem-title{font-size:.62rem;font-weight:800;color:#4b5a7a;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.mx-rem-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem}
+.mx-rem-row:last-child{border-bottom:none}
+.mx-rem-name{color:#cbd5e1;font-weight:600}
+.mx-rem-ok{color:#4ade80;font-weight:800}
+.mx-rem-warn{color:#facc15;font-weight:800}
+.mx-rem-low{color:#f87171;font-weight:800}
+.mx-history{background:#181f2e;border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid rgba(255,255,255,.05)}
+.mx-history-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.8rem;color:#4b5a7a}
+.mx-history-row b{color:#94a3b8}
+.mx-toggle-bar{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.mx-toggle-btn{flex:0 0 auto;padding:9px 16px;border-radius:20px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#94a3b8;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap;transition:.15s}
+.mx-toggle-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
+.mx-toggle-btn.active.spread{background:#b45309;border-color:#b45309}
+.mx-toggle-btn.done-job{border-color:#166534;color:#4ade80}
+.mx-pause-btn{width:100%;padding:12px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:transparent;color:#94a3b8;font-weight:800;font-size:.9rem;cursor:pointer;margin-top:8px;letter-spacing:.2px;transition:.15s}
+.mx-pause-btn:active{background:rgba(255,255,255,.08)}
+.mx-paused-banner{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px}
+.load-btn{width:100%;padding:14px;border-radius:10px;border:none;font-weight:800;font-size:1rem;cursor:pointer;margin-top:12px;transition:.15s}
+.load-btn.blue{background:var(--blue);color:#fff}
+.load-btn.gold{background:var(--gold);color:#fff}
+.load-btn.ghost{background:#f3f4f6;color:#374151;border:1.5px solid #dde1e8}
+.load-btn:disabled{opacity:.45;pointer-events:none}
+.btn{padding:9px 16px;border-radius:9px;border:none;font-weight:700;font-size:.85rem;cursor:pointer}
+.btn-ghost{background:#f3f4f6;color:#374151;border:1.5px solid #dde1e8}
+.btn-blue{background:var(--blue);color:#fff}
+.back-btn{background:none;border:none;color:var(--blue);font-weight:700;font-size:.85rem;cursor:pointer;padding:0 0 12px 0;display:block}
+.progress-bar{height:6px;background:#e5e7eb;border-radius:3px;margin:8px 0}
+.progress-fill{height:100%;border-radius:3px;transition:.3s}
+.progress-fill.spray{background:var(--blue)}
+.progress-fill.spread{background:var(--gold)}
+.progress-fill.misting{background:#7c3aed}
+.stock-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:.82rem}
+.stock-row:last-child{border-bottom:none}
+.s-ok{color:var(--green);font-weight:700}
+.s-low{color:var(--red);font-weight:700}
+.s-warn{color:var(--orange);font-weight:700}
+.stock-input-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.stock-input-row label{font-size:.75rem;font-weight:600;color:var(--muted);white-space:nowrap;min-width:80px}
+.si{padding:7px 9px;border:1.5px solid #dde1e8;border-radius:8px;font-size:.85rem;font-family:inherit;width:80px;text-align:center}
+.day-badge{background:var(--navy);color:#fff;border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;margin-bottom:12px;display:inline-block}
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty .ei{font-size:2.5rem;margin-bottom:10px}
 </style>
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="login-inner">
-    <div class="login-logo">
-      <div class="login-logo-icon">&#9992;&#65039;</div>
-      <h1>AeroOps Mixer</h1>
-      <p>Select your name to begin</p>
+<div class="hdr" id="hdr" style="display:none">
+  <div style="font-size:1.4rem">&#129514;</div>
+  <div>
+    <div class="hdr-title">Aerotech Mixer</div>
+    <div class="hdr-sub" id="hdr-sub">Loading…</div>
+  </div>
+  <div class="sync conn" id="sync-badge">&#9203; Connecting</div>
+  <div class="hdr-badge" onclick="signOut()">Sign Out</div>
+</div>
+
+<div class="screen active" id="s-login">
+  <div class="login-wrap">
+    <div class="login-logo">&#129514;</div>
+    <div class="login-title">Aerotech Mixer</div>
+    <p style="color:var(--muted);font-size:.85rem;text-align:center">Select your name then enter your PIN</p>
+    <div class="mixer-grid" id="mixer-grid">
+      <button class="mixer-btn" onclick="selMixer_('Ben Simcock')"><span style="display:block;font-size:.95rem;font-weight:800">Ben</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Simcock</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Robert Proud')"><span style="display:block;font-size:.95rem;font-weight:800">Robert</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Proud</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Amber Meyers')"><span style="display:block;font-size:.95rem;font-weight:800">Amber</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Meyers</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Shaun Dempsey')"><span style="display:block;font-size:.95rem;font-weight:800">Shaun</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Dempsey</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Adam Sullivan')"><span style="display:block;font-size:.95rem;font-weight:800">Adam</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Sullivan</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Will Piip')"><span style="display:block;font-size:.95rem;font-weight:800">Will</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Piip</span></button>
+      <button class="mixer-btn" onclick="selMixer_('Craig Dawson')"><span style="display:block;font-size:.95rem;font-weight:800">Craig</span><span style="display:block;font-size:.75rem;font-weight:500;color:#6b7280;margin-top:2px">Dawson</span></button>
     </div>
-    <div id="mixer-grid" class="mixer-grid"></div>
-    <div id="all-jobs-btn" class="all-jobs-btn" onclick="selAllJobs()">&#128065; &nbsp; View All Jobs</div>
-    <div id="pin-section" class="pin-section">
-      <div style="text-align:center;font-size:14px;font-weight:600;color:#1a365d;margin-bottom:8px" id="pin-name"></div>
-      <div id="pin-display" class="pin-dots"></div>
-      <div class="numpad">
-        <div class="pk" onclick="numTap('1')">1</div>
-        <div class="pk" onclick="numTap('2')">2</div>
-        <div class="pk" onclick="numTap('3')">3</div>
-        <div class="pk" onclick="numTap('4')">4</div>
-        <div class="pk" onclick="numTap('5')">5</div>
-        <div class="pk" onclick="numTap('6')">6</div>
-        <div class="pk" onclick="numTap('7')">7</div>
-        <div class="pk" onclick="numTap('8')">8</div>
-        <div class="pk" onclick="numTap('9')">9</div>
-        <div class="pk clr" onclick="numTap('X')">&#9003;</div>
-        <div class="pk" onclick="numTap('0')">0</div>
-        <div class="pk" style="color:#1a365d" onclick="numTap('ok')">&#10003;</div>
+    <div style="width:100%;max-width:320px;display:none" id="pin-section">
+      <div class="pin-row" id="pin-dots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
       </div>
-      <div id="pin-err" class="pin-err"></div>
+      <div style="font-size:.75rem;color:var(--red);text-align:center;min-height:18px;margin:6px 0" id="pin-err"></div>
+      <div class="numpad">
+        <button class="num-btn" onclick="numTap('1')">1</button>
+        <button class="num-btn" onclick="numTap('2')">2</button>
+        <button class="num-btn" onclick="numTap('3')">3</button>
+        <button class="num-btn" onclick="numTap('4')">4</button>
+        <button class="num-btn" onclick="numTap('5')">5</button>
+        <button class="num-btn" onclick="numTap('6')">6</button>
+        <button class="num-btn" onclick="numTap('7')">7</button>
+        <button class="num-btn" onclick="numTap('8')">8</button>
+        <button class="num-btn" onclick="numTap('9')">9</button>
+        <div></div>
+        <button class="num-btn" onclick="numTap('0')">0</button>
+        <button class="num-btn del" onclick="numTap('X')">&#9003;</button>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="hdr">
-  <div class="hdr-left">
-    <div class="hdr-title">AeroOps</div>
-    <div class="hdr-sub" id="hdr-sub">Mixer Operations</div>
-  </div>
-  <div class="sync-badge" id="sync-badge">...</div>
-  <button onclick="doLogout()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;cursor:pointer">Logout</button>
-</div>
-
-<div id="err-banner"></div>
-
-<div id="s-jobs" class="screen active">
+<div class="screen" id="s-jobs">
+  <div id="jobs-date" class="day-badge"></div>
   <div id="jobs-list"></div>
 </div>
 
-<div id="s-detail" class="screen">
+<div class="screen" id="s-stock">
+  <div id="stock-setup-wrap"></div>
+</div>
+
+<div class="screen" id="s-detail">
   <div id="detail-wrap"></div>
+</div>
+
+<div class="screen" id="s-mixing">
+  <div id="mixing-wrap"></div>
 </div>
 
 <script>
 var MIXER_PINS={"Ben Simcock":"1111","Robert Proud":"2222","Amber Meyers":"3333","Shaun Dempsey":"4444","Adam Sullivan":"5555","Will Piip":"6666","Craig Dawson":"7777"};
-var FS_KEY="AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI";
-var FS_BASE="https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents";
-var _loginMixer="",_loginPin="";
+var SPREAD_TYPES=['Urea','Fertiliser','Snail Bait','Mouse Bait','Seed','Spread','Granular'];
+var selMixer='';
+var pinBuf='';
+var mixerName='';
+var jobs=[];
+var FSKEY='AIzaSyC5Aw3OjP3Fmh1OeveOwSqlMgJyTfufzVI';
+var FSBASE='https://firestore.googleapis.com/v1/projects/aerotech-ops/databases/(default)/documents';
 
-function showScr(id){
-  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
-  document.getElementById(id).classList.add("active");
+/* ── Login ───────────────────────────────────────────────── */
+function selMixer_(n){
+  selMixer=n;
+  document.querySelectorAll('.mixer-btn').forEach(function(b){b.classList.remove('sel');});
+  try{if(event.target.closest('.mixer-btn'))event.target.closest('.mixer-btn').classList.add('sel');}catch(e){}
+  document.getElementById('pin-section').style.display='block';
+  pinBuf='';
+  drawDots();
+  document.getElementById('pin-err').textContent='';
 }
-
-function showErr(msg){
-  var b=document.getElementById("err-banner");
-  if(b){b.className="visible";b.textContent="Error: "+msg;}
-}
-
-function sv(v){try{return(v&&v.stringValue)?v.stringValue:"";}catch(e){return"";}}
-function nv(v){try{return v?(parseFloat(v.doubleValue||v.integerValue)||0):0;}catch(e){return 0;}}
-
-function fsDoc(doc){
-  try{
-    if(!doc){return null;}
-    var f=doc.fields||{};
-    var sched={};
-    try{sched=(f.schedule&&f.schedule.mapValue&&f.schedule.mapValue.fields)?f.schedule.mapValue.fields:{};}catch(e){sched={};}
-    var mp={};
-    try{mp=(f.mixProgress&&f.mixProgress.mapValue&&f.mixProgress.mapValue.fields)?f.mixProgress.mapValue.fields:{};}catch(e){mp={};}
-    var la=[];
-    try{la=(f.loads&&f.loads.arrayValue&&f.loads.arrayValue.values)?f.loads.arrayValue.values:[];}catch(e){la=[];}
-    var id="";
-    try{id=doc.name?doc.name.split("/").pop():"";}catch(e){id="";}
-    var loads=[];
-    for(var i=0;i<la.length;i++){
-      try{
-        var l=la[i];
-        var ff=(l&&l.mapValue&&l.mapValue.fields)?l.mapValue.fields:{};
-        loads.push({
-          loadId:sv(ff.loadId),
-          containerId:sv(ff.containerId),
-          chemName:sv(ff.chemName),
-          volL:nv(ff.volL),
-          rate:nv(ff.rate),
-          complete:!!(ff.complete&&ff.complete.booleanValue)
-        });
-      }catch(e){}
+function numTap(k){
+  if(!selMixer)return;
+  if(k==='X'){pinBuf=pinBuf.slice(0,-1);drawDots();return;}
+  if(pinBuf.length>=4)return;
+  pinBuf+=k;drawDots();
+  if(pinBuf.length===4){
+    if(MIXER_PINS[selMixer]===pinBuf){
+      mixerName=selMixer;
+      try{localStorage.setItem('at_mixer',selMixer);}catch(e){}
+      document.getElementById('hdr').style.display='flex';
+      document.getElementById('hdr-sub').textContent=selMixer;
+      show('s-jobs');
+      fetchJobs();
+    }else{
+      document.getElementById('pin-err').textContent='Wrong PIN';
+      pinBuf='';drawDots();
     }
-    return{
-      id:id,
-      mixerName:sv(sched.mixer),
-      schedDate:sv(sched.scheduledDate),
-      pilot:sv(sched.pilot),
-      aircraft:sv(sched.aircraft),
-      estStart:sv(sched.estStart),
-      status:sv(f.status)||"active",
-      clientName:sv(f.clientName),
-      loadsArr:loads,
-      pilotHold:!!(f.pilotHold&&f.pilotHold.booleanValue),
-      loadsDone:nv(mp.loadsComplete),
-      loadsTotal:nv(mp.loadsTotal)
-    };
-  }catch(e){
-    return null;
   }
 }
+function drawDots(){
+  for(var i=0;i<4;i++){
+    var d=document.getElementById('pd'+i);
+    if(d){d.textContent=pinBuf[i]?'●':'';d.className='pin-dot'+(pinBuf[i]?' filled':'');}
+  }
+}
+function signOut(){
+  try{localStorage.removeItem('at_mixer');}catch(e){}
+  mixerName='';selMixer='';pinBuf='';
+  document.getElementById('hdr').style.display='none';
+  document.getElementById('pin-section').style.display='none';
+  document.querySelectorAll('.mixer-btn').forEach(function(b){b.classList.remove('sel');});
+  show('s-login');
+}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.id===id);});}
 
-function fetchJobs(){
-  var b=document.getElementById("sync-badge");
-  if(b){b.textContent="Syncing...";}
-  var controller=new AbortController();
-  var timer=setTimeout(function(){
-    controller.abort();
-    var b=document.getElementById("sync-badge");
-    if(b){b.textContent="Timeout";}
-    showErr("Request timed out after 15 seconds");
-  },15000);
-  fetch(FS_BASE+"/jobs?pageSize=200&key="+FS_KEY,{signal:controller.signal})
-  .then(function(r){
-    clearTimeout(timer);
-    if(!r.ok){throw new Error("HTTP "+r.status+" ("+r.statusText+")");}
-    return r.text();
-  })
-  .then(function(text){
-    clearTimeout(timer);
-    var d;
-    try{d=JSON.parse(text);}catch(e){throw new Error("Invalid JSON response");}
-    if(d.error){throw new Error("Firestore: "+(d.error.message||"Unknown error"));}
-    var docs=d.documents||[];
-    var jobs=[];
-    for(var i=0;i<docs.length;i++){
-      try{
-        var job=fsDoc(docs[i]);
-        if(job){jobs.push(job);}
-      }catch(e){}
+/* ── Firestore REST ─────────────────────────────────────── */
+function fsVal(v){
+  if(!v)return null;
+  try{
+    if(v.stringValue!==undefined)return v.stringValue;
+    if(v.integerValue!==undefined)return parseInt(v.integerValue,10);
+    if(v.doubleValue!==undefined)return parseFloat(v.doubleValue);
+    if(v.booleanValue!==undefined)return v.booleanValue;
+    if(v.arrayValue)return(v.v.arrayValue.values||[]).map(fsVal);
+    if(v.mapValue){
+      var o={};
+      Object.keys(v.mapValue.fields||{}).forEach(function(k){try{o[k]=fsVal(v.mapValue.fields[k]);}catch(e){}});
+      return o;
     }
-    window.jobs=jobs;
-    var b=document.getElementById("sync-badge");
-    if(b){b.textContent="Live";}
-    document.getElementById("err-banner").className="";
-    if(document.getElementById("s-jobs").classList.contains("active")){renderJobs();}
+  }catch(e){}
+  return null;
+}
+function fsParseDoc(doc){
+  var o={id:(doc.name||'').split('/').pop()};
+  Object.keys(doc.fields||{}).forEach(function(k){try{o[k]=fsVal(doc.fields[k]);}catch(e){o[k]=null;}});
+  return o;
+}
+function fsUpdate(docId,data){
+  var fields={};
+  Object.keys(data).forEach(function(k){
+    var tv=data[k];
+    if(tv===null)fields[k]={nullValue:null};
+    else if(typeof tv==='string')fields[k]={stringValue:tv};
+    else if(typeof tv==='number')fields[k]={doubleValue:tv};
+    else if(typeof tv==='boolean')fields[k]={booleanValue:tv};
+    else if(Array.isArray(tv)){
+      fields[k]={arrayValue:{values:tv.map(function(x){return typeof x==='string'?{stringValue:x}:{doubleValue:x};})}};
+    }else if(typeof tv==='object'){
+      var mf={};
+      Object.keys(tv).forEach(function(mk){mf[mk]=typeof tv[mk]==='string'?{stringValue:tv[mk]}:{doubleValue:tv[mk]};});
+      fields[k]={mapValue:{fields:mf}};
+    }
+  });
+  var mask=Object.keys(data).map(function(k){return'encodeURIComponent("updateMask.fieldPaths")='+k;}).join('&');
+  return fetch(FSBASE+'/jobs/'+docId+'?'+mask+'&key='+FSKEY,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:fields})
+  });
+}
+function fetchJobs(){
+  var controller=new AbortController();
+  var timer=setTimeout(function(){controller.abort();var b=document.getElementById('sync-badge');if(b){b.textContent='Timeout';b.className='sync conn';}},15000);
+  fetch(FSBASE+'/jobs?pageSize=200&key='+FSKEY,{signal:controller.signal})
+  .then(function(r){clearTimeout(timer);if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(function(d){
+    clearTimeout(timer);
+    if(d.error)throw new Error(d.error.message);
+    jobs=(d.documents||[]).map(fsParseDoc);
+    var b=document.getElementById('sync-badge');
+    if(b){b.textContent='Live';b.className='sync ok';}
+    renderJobs();
   })
   .catch(function(e){
     clearTimeout(timer);
-    var b=document.getElementById("sync-badge");
-    if(b){b.textContent=e.name==="AbortError"?"Timeout":"Error";}
-    showErr(e.message||e.name||"Unknown error");
+    var b=document.getElementById('sync-badge');
+    if(b){b.textContent=e.name==='AbortError'?'Timeout':'Err: '+e.message;b.className='sync conn';}
+    var jl=document.getElementById('jobs-list');
+    if(jl&&!jobs.length){
+      jl.innerHTML='<div class="empty"><div class="ei">&#9888;</div><p style="font-size:.8rem">'+e.message+'</p><button onclick="fetchJobs()" style="margin-top:10px;padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">Retry</button></div>';
+    }
   });
 }
 
-function renderJobs(){
-  var name=window.currentMixer||"";
-  var today=new Date().toISOString().slice(0,10);
-  var list=[];
-  var jobs=window.jobs||[];
-  for(var i=0;i<jobs.length;i++){
-    var j=jobs[i];
-    if(!j)continue;
-    if(j.schedDate&&j.schedDate!==today)continue;
-    if(j.status==="invoiced")continue;
-    if(name&&name!=="ALL"&&j.mixerName!==name)continue;
-    list.push(j);
-  }
-  list.sort(function(a,b){return((b.schedDate||"")+"").localeCompare((a.schedDate||"")+"");});
-  var ul=document.getElementById("jobs-list");
-  if(!ul)return;
-  if(list.length===0){
-    ul.innerHTML='<div style="text-align:center;padding:60px 20px;color:#5a6a7a">No jobs for today</div>';
-    return;
-  }
-  var html="";
-  for(var i=0;i<list.length;i++){
-    var j=list[i];
-    var c={active:"#4a9eff",completed:"#4caf50",cancelled:"#f44336"}[j.status]||"#4a9eff";
-    var info=(j.pilot?j.pilot+" · ":"")+(j.estStart?j.estStart:"")+"  "+(j.loadsDone||0)+"/"+(j.loadsTotal||0)+" loads";
-    html+='<div class="job-btn" style="border-color:'+c+'" onclick="showJob(\''+j.id+'\')">'+
-      '<div style="font-weight:600">'+(j.clientName||"Unknown")+'</div>'+
-      '<div style="font-size:12px;color:#7a8fa6;margin-top:4px">'+info+'</div>'+
-      '</div>';
-  }
-  ul.innerHTML=html;
-}
-
-function showJob(id){
-  var j=(window.jobs||[]).filter(function(x){return x&&x.id===id;})[0];
-  if(!j)return;
-  window.currentJob=j;
-  showScr("s-detail");
-  var w=document.getElementById("detail-wrap");
-  if(!w)return;
-  var loads=j.loadsArr||[];
-  var loadHtml="";
-  for(var i=0;i<loads.length;i++){
-    var l=loads[i];
-    var col=l&&l.complete?"#4caf50":"#ff9800";
-    var status=l&&l.complete?"Complete":"Pending";
-    loadHtml+='<div class="card" style="border-left:4px solid '+col+'">'+
-      '<div style="font-weight:600">Load '+(i+1)+' — '+(l&&l.chemName||"Unknown")+'</div>'+
-      '<div style="font-size:13px;color:#7a8fa6;margin-top:4px">Container: '+(l&&l.containerId||"?")+' &nbsp; Vol: '+(l&&l.volL||0)+'L &nbsp; Rate: '+(l&&l.rate||0)+'L/min</div>'+
-      '<div style="margin-top:8px;font-size:13px">Status: '+status+'</div>'+
-      '</div>';
-  }
-  if(!loadHtml){loadHtml='<div style="color:#5a6a7a;text-align:center;padding:20px">No loads</div>';}
-  w.innerHTML='<button class="back-btn" onclick="showScr(\'s-jobs\')">&#8592; Back</button>'+
-    '<div class="card" style="margin-top:12px">'+
-      '<div style="font-size:20px;font-weight:700;margin-bottom:8px">'+(j.clientName||"Unknown")+'</div>'+
-      '<div style="color:#7a8fa6;font-size:13px">&#128197; '+(j.schedDate||"No date")+' &nbsp; Status: <span style="color:#4a9eff">'+(j.status||"active")+'</span></div>'+
-      '<div style="margin-top:8px;font-size:14px"><b>Mixer:</b> '+(j.mixerName||"—")+' &nbsp; <b>Pilot:</b> '+(j.pilot||"—")+' &nbsp; <b>Aircraft:</b> '+(j.aircraft||"—")+'</div>'+
-    '</div>'+
-    '<div class="sec-title">Loads ('+(j.loadsDone||0)+'/'+(j.loadsTotal||0)+')</div>'+loadHtml;
-}
-
-function buildMixerGrid(){
-  var g=document.getElementById("mixer-grid");
-  if(!g)return;
-  var html="";
-  var keys=Object.keys(MIXER_PINS);
-  for(var i=0;i<keys.length;i++){
-    var n=keys[i];
-    var p=n.split(" ");
-    html+='<div class="mixer-btn" onclick="selMixer(\''+n.replace(/'/g,"\\'")+'\')"><span>'+p[0]+'</span'+(p.length>1?" "+p.slice(1).join(""):"")+'></div>';
-  }
-  g.innerHTML=html;
-}
-
-function selMixer(n){
-  _loginMixer=n;_loginPin="";
-  var btns=document.querySelectorAll(".mixer-btn");
-  for(var i=0;i<btns.length;i++){btns[i].classList.remove("sel");}
-  try{if(event.target.closest(".mixer-btn")){event.target.closest(".mixer-btn").classList.add("sel");}}catch(e){}
-  document.getElementById("pin-section").style.display="block";
-  document.getElementById("all-jobs-btn").style.display="none";
-  document.getElementById("pin-name").textContent=n;
-  drawDots();
-  document.getElementById("pin-err").textContent="";
-}
-
-function selAllJobs(){
-  _loginMixer="ALL";
-  try{localStorage.setItem("at_mixer","ALL");}catch(e){}
-  document.getElementById("pin-section").style.display="none";
-  doLogin("ALL");
-}
-
-function numTap(k){
-  if(k==="ok"){
-    if(MIXER_PINS[_loginMixer]===_loginPin){
-      try{localStorage.setItem("at_mixer",_loginMixer);}catch(e){}
-      doLogin(_loginMixer);
-    }else{
-      document.getElementById("pin-err").textContent="Wrong PIN — try again";
-      _loginPin="";drawDots();
-    }
-    return;
-  }
-  if(!_loginMixer)return;
-  if(k==="X"){_loginPin=_loginPin.slice(0,-1);drawDots();return;}
-  if(_loginPin.length>=4)return;
-  _loginPin+=k;drawDots();
-}
-
-function drawDots(){
-  for(var i=0;i<4;i++){
-    var d=document.getElementById("pd"+i);
-    if(d){d.textContent=_loginPin[i]?"●":"";d.className="pin-dot"+(_loginPin[i]?" filled":"");}
-  }
-}
-
-function doLogout(){
-  try{localStorage.removeItem("at_mixer");}catch(e){}
-  window.currentMixer="";
-  _loginMixer="";_loginPin="";
-  document.getElementById("login-screen").style.display="flex";
-  document.getElementById("pin-section").style.display="none";
-  document.getElementById("all-jobs-btn").style.display="block";
-  document.getElementById("err-banner").className="";
-  buildMixerGrid();
-}
-
-function doLogin(name){
-  window.currentMixer=name;
-  document.getElementById("login-screen").style.display="none";
-  showScr("s-jobs");
-  document.getElementById("hdr-sub").textContent="Signed in"+(name!=="ALL"?" — "+name:"");
-  fetchJobs();
-}
-
-document.addEventListener("DOMContentLoaded",function(){
-  var dd=document.getElementById("pin-display");
-  if(dd){dd.innerHTML="";for(var i=0;i<4;i++){var d=document.createElement("div");d.id="pd"+i;d.className="pin-dot";dd.appendChild(d);}}
-  buildMixerGrid();
-  fetchJobs();
+/* ── Auto-login on page load ─────────────────────────────── */
+document.addEventListener('DOMContentLoaded',function(){
   var saved=null;
-  try{saved=localStorage.getItem("at_mixer");}catch(e){}
-  if(saved==="ALL"){_loginMixer="ALL";doLogin("ALL");return;}
+  try{saved=localStorage.getItem('at_mixer');}catch(e){}
   if(saved&&MIXER_PINS[saved]){
-    _loginMixer=saved;
-    document.getElementById("pin-section").style.display="block";
-    document.getElementById("pin-name").textContent=saved;
-    buildMixerGrid();
-    var btns=document.querySelectorAll(".mixer-btn");
-    for(var i=0;i<btns.length;i++){
-      if(btns[i].textContent.trim().indexOf(saved.split(" ")[0])===0){btns[i].classList.add("sel");}
-    }
+    selMixer=saved;
+    mixerName=saved;
+    document.getElementById('pin-section').style.display='block';
     drawDots();
-    doLogin(saved);
+    document.getElementById('hdr').style.display='flex';
+    document.getElementById('hdr-sub').textContent=saved;
+    show('s-jobs');
+    fetchJobs();
   }
 });
-</script>
+setInterval(fetchJobs,10000);
 
-<script>
-/**
- * Iframe 元素高亮注入脚本
- * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
- *
- * 使用方法：
- * 1. 将此脚本添加到目标网站的 HTML 中
- * 2. 或通过浏览器扩展、用户脚本等方式注入
- */
+/* ── Helpers ─────────────────────────────────────────────── */
+function progKey(jid){return'mixer_progress_'+jid;}
+function getProg(jid){return JSON.parse(localStorage.getItem(progKey(jid))||'{"load":0,"checks":{},"loadTimes":[]}');}
+function saveProg(jid,p){try{localStorage.setItem(progKey(jid),JSON.stringify(p));}catch(e){}}
 
-(function () {
-  "use strict";
+function stockKey(jid){return'mixer_stock_'+jid;}
+function getStock(jid){return JSON.parse(localStorage.getItem(stockKey(jid))||'null');}
+function saveStock(jid,s){try{localStorage.setItem(stockKey(jid),JSON.stringify(s));}catch(e){}}
 
-  // 检查是否在 iframe 中
-  if (window.self === window.top) {
-    return; // 不在 iframe 中，不执行
+function buildContainers(entries){
+  var result=[];
+  for(var i=0;i<entries.length;i++){
+    var e=entries[i],size=parseFloat(e.size)||0,count=parseInt(e.count)||0;
+    if(size>0&&count>0)for(var j=0;j<count;j++)result.push(size);
   }
+  return result.sort(function(a,b){return b-a;});
+}
 
-  // 检查是否已经初始化过
-  if (window.__iframeHighlightInitialized) {
-    return;
+function calcContainerUsage(containers,amount){
+  var lines=[];var remaining=amount;var state=containers.slice();
+  for(var i=0;i<state.length&&remaining>0.001;i++){
+    if(state[i]<=0.001)continue;
+    var used=Math.min(state[i],remaining);
+    remaining-=used;state[i]-=used;
+    if(used>0.001)lines.push({size:containers[i],used:used.toFixed(1),left:state[i].toFixed(1)});
   }
-  window.__iframeHighlightInitialized = true;
-  console.log("Iframe 高亮脚本已加载");
+  return{lines:lines,remaining:remaining.toFixed(2),shortfall:remaining>0.001?((remaining/(amount||1))*100).toFixed(1)+'% short':null};
+}
 
-  // 创建高亮覆盖层
-  var overlay = document.createElement("div");
-  overlay.id = "iframe-highlight-overlay";
-  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
-
-  // 创建悬停高亮框（虚线边框）
-  var highlightBox = document.createElement("div");
-  highlightBox.id = "iframe-highlight-box";
-  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
-
-  // 创建选中节点的常驻高亮框（实线边框）
-  var selectedBox = document.createElement("div");
-  selectedBox.id = "iframe-selected-box";
-  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
-
-  // 创建悬停标签显示
-  var tagLabel = document.createElement("div");
-  tagLabel.id = "iframe-tag-label";
-  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
-
-  // 创建选中节点标签
-  var selectedLabel = document.createElement("div");
-  selectedLabel.id = "iframe-selected-label";
-  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
-  overlay.appendChild(highlightBox);
-  overlay.appendChild(selectedBox);
-  overlay.appendChild(tagLabel);
-  overlay.appendChild(selectedLabel);
-  document.body.appendChild(overlay);
-
-  // 存储当前选中的元素
-  var selectedElement = null;
-  var highlightEnabled = false;
-
-  // 更新选中元素的高亮显示
-  function updateSelectedHighlight(element) {
-    console.log("updateSelectedHighlight called with:", element);
-    if (!element) {
-      selectedBox.style.display = "none";
-      selectedLabel.style.display = "none";
-      selectedElement = null;
-      console.log("Cleared selected highlight");
-      return;
-    }
-    selectedElement = element;
-    var rect = element.getBoundingClientRect();
-    console.log("Selected element rect:", rect);
-
-    // 更新选中高亮框位置
-    selectedBox.style.display = "block";
-    selectedBox.style.left = "".concat(rect.left - 2, "px");
-    selectedBox.style.top = "".concat(rect.top - 2, "px");
-    selectedBox.style.width = "".concat(rect.width + 4, "px");
-    selectedBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新选中标签位置和内容
-    selectedLabel.style.display = "block";
-    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 28;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 5) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
-    if (labelLeft + labelWidth > window.innerWidth - 10) {
-      labelLeft = window.innerWidth - labelWidth - 10;
-    }
-    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
-    selectedLabel.style.top = "".concat(labelTop, "px");
-    console.log("Selected highlight positioned at:", {
-      left: selectedBox.style.left,
-      top: selectedBox.style.top,
-      width: selectedBox.style.width,
-      height: selectedBox.style.height
-    });
+/* ── Calc ────────────────────────────────────────────────── */
+function calcLoads(j){
+  var spread=(j.products||[]).some(function(p){return SPREAD_TYPES.indexOf(p.type)!==-1;});
+  var totalHa=(j.paddocks||[]).reduce(function(s,p){return s+(parseFloat(p.ha)||0);},0);
+  var caps={Urea:2000,Fertiliser:2400,'Snail Bait':2000,'Mouse Bait':1200,Seed:2000,Spray:3020};
+  var hopper;
+  if(spread){
+    var pp=(j.products||[]).find(function(p){return SPREAD_TYPES.indexOf(p.type)!==-1;});
+    hopper=parseFloat(j.hopperOverride)||(pp?caps[pp.type]||2000:2000);
+  }else{
+    hopper=parseFloat(j.hopperOverride)||caps.Spray;
   }
-  function getElementSelector(element) {
-    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
-    var segments = [];
-    var current = element;
-    while (current !== document.documentElement) {
-      var selector = '';
-      // 优先检查唯一ID
-      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
-        segments.unshift("#".concat(current.id));
-        break; // ID唯一，无需继续向上
-      }
-
-      // 生成类名选择器（取第一个有效类名）
-      var classes = Array.from(current.classList).filter(function (c) {
-        return !c.startsWith('js-');
-      });
-      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
-
-      // 生成位置索引（nth-child）
-      var tag = current.tagName.toLowerCase();
-      if (!className) {
-        var siblings = Array.from(current.parentNode.children);
-        var index = siblings.findIndex(function (el) {
-          return el === current;
-        }) + 1;
-        selector = "".concat(tag, ":nth-child(").concat(index, ")");
-      } else {
-        selector = className;
-      }
-      segments.unshift(selector);
-      current = current.parentElement;
-    }
-
-    // 处理根元素
-    if (current === document.documentElement) {
-      segments.unshift('html');
-    }
-    return segments.join(' > ');
-  }
-
-  // 获取元素文本内容
-  function getElementText(element) {
-    var _element$textContent;
-    if (element.tagName === "INPUT") {
-      return element.value || element.placeholder || "";
-    }
-    if (element.tagName === "TEXTAREA") {
-      return element.value || element.placeholder || "";
-    }
-    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
-    return text.length > 50 ? text.substring(0, 50) + "..." : text;
-  }
-
-  // 获取元素属性信息
-  function getElementAttributes(element) {
-    var attrs = {};
-    for (var i = 0; i < element.attributes.length; i++) {
-      var attr = element.attributes[i];
-      attrs[attr.name] = attr.value;
-    }
-    return attrs;
-  }
-
-  // 鼠标悬停事件处理
-  function handleMouseOver(e) {
-    if (!highlightEnabled) return;
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免高亮 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 如果是已选中的元素，不显示悬停高亮
-    if (target === selectedElement) {
-      highlightBox.style.display = "none";
-      tagLabel.style.display = "none";
-      return;
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-
-    // 更新悬停高亮框位置
-    highlightBox.style.display = "block";
-    highlightBox.style.left = "".concat(rect.left - 2, "px");
-    highlightBox.style.top = "".concat(rect.top - 2, "px");
-    highlightBox.style.width = "".concat(rect.width + 4, "px");
-    highlightBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新标签位置和内容
-    tagLabel.style.display = "block";
-    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 22;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 0) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
-      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
-    }
-    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
-    tagLabel.style.top = "".concat(labelTop, "px");
-
-    // 发送消息到父窗口
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 鼠标离开事件处理
-  function handleMouseOut(e) {
-    if (!highlightEnabled) return;
-    var relatedTarget = e.relatedTarget;
-
-    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
-    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
-      return;
-    }
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: null,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 点击事件处理
-  function handleClick(e) {
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免处理 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 检查是否是交互元素，这些元素需要保留默认行为
-    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
-
-    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
-    if (highlightEnabled) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-    console.log("Element clicked:", {
-      tagName: target.tagName,
-      selector: selector,
-      rect: rect
-    });
-
-    // 立即更新选中高亮
-    updateSelectedHighlight(target);
-
-    // 隐藏悬停高亮，因为现在是选中状态
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-click",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 监听来自父窗口的消息
-  function handleParentMessage(event) {
-    console.log("Received message from parent:", event.data);
-    if (event.data.type === "iframe-highlight-toggle") {
-      var enabled = event.data.enabled;
-      console.log("Highlight toggle:", enabled);
-      if (enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "enable-iframe-highlight") {
-      console.log("Enable iframe highlight");
-      enableHighlight();
-    } else if (event.data.type === "disable-iframe-highlight") {
-      console.log("Disable iframe highlight");
-      disableHighlight();
-    } else if (event.data.type === "toggle-iframe-highlight") {
-      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
-      console.log("Toggle iframe highlight to:", _enabled);
-      if (_enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "update-selected-element") {
-      var selector = event.data.selector;
-      console.log("Update selected element with selector:", selector);
-      if (selector) {
-        try {
-          var element = document.querySelector(selector);
-          console.log("Found element by selector:", element);
-          updateSelectedHighlight(element);
-        } catch (error) {
-          console.warn("Failed to select element:", error);
-          updateSelectedHighlight(null);
-        }
-      } else {
-        updateSelectedHighlight(null);
-      }
-    } else if (event.data.type === "clear-selected-element") {
-      console.log("Clear selected element");
-      updateSelectedHighlight(null);
-    }
-  }
-
-  // 启用高亮功能
-  function enableHighlight() {
-    console.log("Enabling highlight");
-    document.addEventListener("mouseover", handleMouseOver, true);
-    document.addEventListener("mouseout", handleMouseOut, true);
-    document.addEventListener("click", handleClick, true);
-    highlightEnabled = true;
-    overlay.style.display = "block";
-  }
-
-  // 禁用高亮功能
-  function disableHighlight() {
-    console.log("Disabling highlight");
-    highlightEnabled = false;
-    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
-    // 这样可以保留选中状态的显示
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
-  }
-
-  // 完全禁用高亮功能（移除所有监听器）
-  function fullyDisableHighlight() {
-    console.log("Fully disabling highlight");
-    highlightEnabled = false;
-    document.removeEventListener("mouseover", handleMouseOver, true);
-    document.removeEventListener("mouseout", handleMouseOut, true);
-    document.removeEventListener("click", handleClick, true);
-    overlay.style.display = "none";
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    selectedBox.style.display = "none";
-    selectedLabel.style.display = "none";
-  }
-
-  // 添加事件监听
-  enableHighlight();
-  window.addEventListener("message", handleParentMessage);
-
-  // 暴露全局函数供外部调用
-  window.__iframeHighlightControl = {
-    enable: enableHighlight,
-    disable: disableHighlight,
-    fullyDisable: fullyDisableHighlight,
-    isEnabled: function isEnabled() {
-      return highlightEnabled;
-    },
-    getSelectedElement: function getSelectedElement() {
-      return selectedElement;
-    },
-    updateSelected: updateSelectedHighlight,
-    // 通过消息发送开关控制
-    sendToggleMessage: function sendToggleMessage(enabled) {
-      window.parent.postMessage({
-        type: 'iframe-highlight-status',
-        enabled: enabled || highlightEnabled,
-        source: 'iframe-highlight-injector'
-      }, '*');
-    }
-  };
-
-  // 通知父窗口脚本已加载
-  try {
-    window.parent.postMessage({
-      type: "iframe-highlight-ready",
-      data: {
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: Date.now()
-      },
-      source: "iframe-highlight-injector"
-    }, "*");
-  } catch (error) {
-    console.warn("无法发送就绪消息到父窗口:", error);
-  }
-
-  // 清理函数
-  window.__iframeHighlightCleanup = function () {
-    fullyDisableHighlight();
-    window.removeEventListener("message", handleParentMessage);
-    if (overlay.parentElement) {
-      overlay.parentElement.removeChild(overlay);
-    }
-    delete window.__iframeHighlightInitialized;
-    delete window.__iframeHighlightCleanup;
-  };
-})();
-
-</script>
-
-<script>
-/**
- * Iframe 元素高亮注入脚本
- * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
- *
- * 使用方法：
- * 1. 将此脚本添加到目标网站的 HTML 中
- * 2. 或通过浏览器扩展、用户脚本等方式注入
- */
-
-(function () {
-  "use strict";
-
-  // 检查是否在 iframe 中
-  if (window.self === window.top) {
-    return; // 不在 iframe 中，不执行
-  }
-
-  // 检查是否已经初始化过
-  if (window.__iframeHighlightInitialized) {
-    return;
-  }
-  window.__iframeHighlightInitialized = true;
-  console.log("Iframe 高亮脚本已加载");
-
-  // 创建高亮覆盖层
-  var overlay = document.createElement("div");
-  overlay.id = "iframe-highlight-overlay";
-  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
-
-  // 创建悬停高亮框（虚线边框）
-  var highlightBox = document.createElement("div");
-  highlightBox.id = "iframe-highlight-box";
-  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
-
-  // 创建选中节点的常驻高亮框（实线边框）
-  var selectedBox = document.createElement("div");
-  selectedBox.id = "iframe-selected-box";
-  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
-
-  // 创建悬停标签显示
-  var tagLabel = document.createElement("div");
-  tagLabel.id = "iframe-tag-label";
-  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
-
-  // 创建选中节点标签
-  var selectedLabel = document.createElement("div");
-  selectedLabel.id = "iframe-selected-label";
-  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
-  overlay.appendChild(highlightBox);
-  overlay.appendChild(selectedBox);
-  overlay.appendChild(tagLabel);
-  overlay.appendChild(selectedLabel);
-  document.body.appendChild(overlay);
-
-  // 存储当前选中的元素
-  var selectedElement = null;
-  var highlightEnabled = false;
-
-  // 更新选中元素的高亮显示
-  function updateSelectedHighlight(element) {
-    console.log("updateSelectedHighlight called with:", element);
-    if (!element) {
-      selectedBox.style.display = "none";
-      selectedLabel.style.display = "none";
-      selectedElement = null;
-      console.log("Cleared selected highlight");
-      return;
-    }
-    selectedElement = element;
-    var rect = element.getBoundingClientRect();
-    console.log("Selected element rect:", rect);
-
-    // 更新选中高亮框位置
-    selectedBox.style.display = "block";
-    selectedBox.style.left = "".concat(rect.left - 2, "px");
-    selectedBox.style.top = "".concat(rect.top - 2, "px");
-    selectedBox.style.width = "".concat(rect.width + 4, "px");
-    selectedBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新选中标签位置和内容
-    selectedLabel.style.display = "block";
-    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 28;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 5) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
-    if (labelLeft + labelWidth > window.innerWidth - 10) {
-      labelLeft = window.innerWidth - labelWidth - 10;
-    }
-    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
-    selectedLabel.style.top = "".concat(labelTop, "px");
-    console.log("Selected highlight positioned at:", {
-      left: selectedBox.style.left,
-      top: selectedBox.style.top,
-      width: selectedBox.style.width,
-      height: selectedBox.style.height
-    });
-  }
-  function getElementSelector(element) {
-    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
-    var segments = [];
-    var current = element;
-    while (current !== document.documentElement) {
-      var selector = '';
-      // 优先检查唯一ID
-      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
-        segments.unshift("#".concat(current.id));
-        break; // ID唯一，无需继续向上
-      }
-
-      // 生成类名选择器（取第一个有效类名）
-      var classes = Array.from(current.classList).filter(function (c) {
-        return !c.startsWith('js-');
-      });
-      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
-
-      // 生成位置索引（nth-child）
-      var tag = current.tagName.toLowerCase();
-      if (!className) {
-        var siblings = Array.from(current.parentNode.children);
-        var index = siblings.findIndex(function (el) {
-          return el === current;
-        }) + 1;
-        selector = "".concat(tag, ":nth-child(").concat(index, ")");
-      } else {
-        selector = className;
-      }
-      segments.unshift(selector);
-      current = current.parentElement;
-    }
-
-    // 处理根元素
-    if (current === document.documentElement) {
-      segments.unshift('html');
-    }
-    return segments.join(' > ');
-  }
-
-  // 获取元素文本内容
-  function getElementText(element) {
-    var _element$textContent;
-    if (element.tagName === "INPUT") {
-      return element.value || element.placeholder || "";
-    }
-    if (element.tagName === "TEXTAREA") {
-      return element.value || element.placeholder || "";
-    }
-    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
-    return text.length > 50 ? text.substring(0, 50) + "..." : text;
-  }
-
-  // 获取元素属性信息
-  function getElementAttributes(element) {
-    var attrs = {};
-    for (var i = 0; i < element.attributes.length; i++) {
-      var attr = element.attributes[i];
-      attrs[attr.name] = attr.value;
-    }
-    return attrs;
-  }
-
-  // 鼠标悬停事件处理
-  function handleMouseOver(e) {
-    if (!highlightEnabled) return;
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免高亮 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 如果是已选中的元素，不显示悬停高亮
-    if (target === selectedElement) {
-      highlightBox.style.display = "none";
-      tagLabel.style.display = "none";
-      return;
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-
-    // 更新悬停高亮框位置
-    highlightBox.style.display = "block";
-    highlightBox.style.left = "".concat(rect.left - 2, "px");
-    highlightBox.style.top = "".concat(rect.top - 2, "px");
-    highlightBox.style.width = "".concat(rect.width + 4, "px");
-    highlightBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新标签位置和内容
-    tagLabel.style.display = "block";
-    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 22;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 0) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
-      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
-    }
-    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
-    tagLabel.style.top = "".concat(labelTop, "px");
-
-    // 发送消息到父窗口
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 鼠标离开事件处理
-  function handleMouseOut(e) {
-    if (!highlightEnabled) return;
-    var relatedTarget = e.relatedTarget;
-
-    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
-    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
-      return;
-    }
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: null,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 点击事件处理
-  function handleClick(e) {
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免处理 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 检查是否是交互元素，这些元素需要保留默认行为
-    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
-
-    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
-    if (highlightEnabled) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-    console.log("Element clicked:", {
-      tagName: target.tagName,
-      selector: selector,
-      rect: rect
-    });
-
-    // 立即更新选中高亮
-    updateSelectedHighlight(target);
-
-    // 隐藏悬停高亮，因为现在是选中状态
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-click",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 监听来自父窗口的消息
-  function handleParentMessage(event) {
-    console.log("Received message from parent:", event.data);
-    if (event.data.type === "iframe-highlight-toggle") {
-      var enabled = event.data.enabled;
-      console.log("Highlight toggle:", enabled);
-      if (enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "enable-iframe-highlight") {
-      console.log("Enable iframe highlight");
-      enableHighlight();
-    } else if (event.data.type === "disable-iframe-highlight") {
-      console.log("Disable iframe highlight");
-      disableHighlight();
-    } else if (event.data.type === "toggle-iframe-highlight") {
-      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
-      console.log("Toggle iframe highlight to:", _enabled);
-      if (_enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "update-selected-element") {
-      var selector = event.data.selector;
-      console.log("Update selected element with selector:", selector);
-      if (selector) {
-        try {
-          var element = document.querySelector(selector);
-          console.log("Found element by selector:", element);
-          updateSelectedHighlight(element);
-        } catch (error) {
-          console.warn("Failed to select element:", error);
-          updateSelectedHighlight(null);
-        }
-      } else {
-        updateSelectedHighlight(null);
-      }
-    } else if (event.data.type === "clear-selected-element") {
-      console.log("Clear selected element");
-      updateSelectedHighlight(null);
-    }
-  }
-
-  // 启用高亮功能
-  function enableHighlight() {
-    console.log("Enabling highlight");
-    document.addEventListener("mouseover", handleMouseOver, true);
-    document.addEventListener("mouseout", handleMouseOut, true);
-    document.addEventListener("click", handleClick, true);
-    highlightEnabled = true;
-    overlay.style.display = "block";
-  }
-
-  // 禁用高亮功能
-  function disableHighlight() {
-    console.log("Disabling highlight");
-    highlightEnabled = false;
-    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
-    // 这样可以保留选中状态的显示
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
-  }
-
-  // 完全禁用高亮功能（移除所有监听器）
-  function fullyDisableHighlight() {
-    console.log("Fully disabling highlight");
-    highlightEnabled = false;
-    document.removeEventListener("mouseover", handleMouseOver, true);
-    document.removeEventListener("mouseout", handleMouseOut, true);
-    document.removeEventListener("click", handleClick, true);
-    overlay.style.display = "none";
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    selectedBox.style.display = "none";
-    selectedLabel.style.display = "none";
-  }
-
-  // 添加事件监听
-  enableHighlight();
-  window.addEventListener("message", handleParentMessage);
-
-  // 暴露全局函数供外部调用
-  window.__iframeHighlightControl = {
-    enable: enableHighlight,
-    disable: disableHighlight,
-    fullyDisable: fullyDisableHighlight,
-    isEnabled: function isEnabled() {
-      return highlightEnabled;
-    },
-    getSelectedElement: function getSelectedElement() {
-      return selectedElement;
-    },
-    updateSelected: updateSelectedHighlight,
-    // 通过消息发送开关控制
-    sendToggleMessage: function sendToggleMessage(enabled) {
-      window.parent.postMessage({
-        type: 'iframe-highlight-status',
-        enabled: enabled || highlightEnabled,
-        source: 'iframe-highlight-injector'
-      }, '*');
-    }
-  };
-
-  // 通知父窗口脚本已加载
-  try {
-    window.parent.postMessage({
-      type: "iframe-highlight-ready",
-      data: {
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: Date.now()
-      },
-      source: "iframe-highlight-injector"
-    }, "*");
-  } catch (error) {
-    console.warn("无法发送就绪消息到父窗口:", error);
-  }
-
-  // 清理函数
-  window.__iframeHighlightCleanup = function () {
-    fullyDisableHighlight();
-    window.removeEventListener("message", handleParentMessage);
-    if (overlay.parentElement) {
-      overlay.parentElement.removeChild(overlay);
-    }
-    delete window.__iframeHighlightInitialized;
-    delete window.__iframeHighlightCleanup;
-  };
-})();
-
-</script>
-</body>
-</html>
+  var waterRate=parseFloat(j.waterRate)||30;
+  var appRate=spread?(j.products||[]).reduce(function(s,p){return s+(parseFloat(p.rate)||0);},0)||1:waterRate;
+  var totalUnits=totalHa*appRate;
+  var loads=Math.max(1,Math.ceil(totalUnits/hopper));
+  var haPerLoad=Math.round((totalHa/loads)*10000)/10000;
+  var perLoad=haPerLoad*appRate;
+  var unit=spread?'kg':'L';
+  return{spread:spread,loads:loads,hopper:hopper,totalUnits:totalUnits,perLoad:perLoad,haPerLoad:haPerLoad,unit:unit,totalHa:totalHa,appRate:appRate};
+}
+
+function jobClass(j){
+  if((j.products||[]).some(function(p){return p.type==='Misting';}))return'misting';
+  if((j.products||[]).some(function(p){return SPREAD_TYPES.indexOf(p.type)!==-1;}))return'spread';
+  return'spray';
+}
+
+function today(){return new Date().toISOString().slice(0,10);}
+function getDate(j){return(j.schedule?j.schedule.scheduledDate:null)||j.preferredDate||'';}
+
+/* ── Render Jobs ─────────────────────────────────────────── */
+function renderJobs(){
+  var t=today();
+  var el=document.getElementById('jobs-date');
+  if(el)el.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  var list=jobs.filter(function(j){
+    if(!j)return false;
+    if(getDate(j)!==t)return false;
+    if(j.status==='invoiced')return false;
+    if(mixerName&&mixerName!=='ALL'&&j.mixerName!==mixerName)return
