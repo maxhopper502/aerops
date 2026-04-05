@@ -384,7 +384,11 @@ window.signOut=function(){
   show('s-login');
 };
 
-// show() defined above
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
 
 /* ─── Jobs screen ───────────────────────────────────────────── */
 function renderJobs(){
